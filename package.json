@@ -1,0 +1,31 @@
+{
+  "name": "mirror-drive",
+  "version": "0.0.0",
+  "description": "Mirror a hyperdrive or localdrive into another one",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && brittle test/*.js",
+    "lint": "standard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holepunchto/mirror-drive.git"
+  },
+  "author": "Lucas Barrena (@LuKks)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/holepunchto/mirror-drive/issues"
+  },
+  "homepage": "https://github.com/holepunchto/mirror-drive",
+  "devDependencies": {
+    "brittle": "^3.1.0",
+    "corestore": "^6.0.6",
+    "hyperdrive": "^11.0.0-alpha.4",
+    "localdrive": "^1.1.0",
+    "standard": "^17.0.0"
+  },
+  "dependencies": {
+    "binary-stream-equals": "^1.0.0",
+    "streamx": "^2.12.5"
+  }
+}
