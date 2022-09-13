@@ -1,22 +1,12 @@
 const test = require('brittle')
-const { createDrives, changeDrive, sortObjects } = require('./helpers/index.js')
+const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
 const mirror = require('../index.js')
 
 test('mirror localdrive into hyperdrive', async function (t) {
   const { local, hyper } = await createDrives(t)
 
-  await changeDrive(local)
-
   const actual = []
-  const expected = [
-    { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 },
-    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'equal', key: '/equal-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'equal', key: '/equal.txt', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'add', key: '/new.txt', bytesRemoved: 0, bytesAdded: 3 }
-  ]
+  const expected = await changeDrive(local)
 
   const m = mirror(local, hyper, { allOps: true })
 
@@ -32,18 +22,8 @@ test('mirror localdrive into hyperdrive', async function (t) {
 test('mirror hyperdrive into localdrive', async function (t) {
   const { local, hyper } = await createDrives(t)
 
-  await changeDrive(hyper)
-
   const actual = []
-  const expected = [
-    { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 },
-    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'equal', key: '/equal-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'equal', key: '/equal.txt', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'add', key: '/new.txt', bytesRemoved: 0, bytesAdded: 3 }
-  ]
+  const expected = await changeDrive(hyper)
 
   const m = mirror(hyper, local, { allOps: true })
 
