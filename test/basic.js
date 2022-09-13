@@ -9,6 +9,7 @@ test('mirror localdrive into hyperdrive', async function (t) {
   const expected = await changeDrive(local)
 
   const m = mirror(local, hyper, { allOps: true })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
   for await (const diff of m) {
     delete diff.count
@@ -30,6 +31,7 @@ test('mirror hyperdrive into localdrive', async function (t) {
   const expected = await changeDrive(hyper)
 
   const m = mirror(hyper, local, { allOps: true })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
   for await (const diff of m) {
     delete diff.count
