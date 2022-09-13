@@ -47,6 +47,16 @@ async function changeDrive (drive) {
   await drive.put('/meta.txt', Buffer.from('same'), { metadata: 'edit' })
   await drive.put('/add-meta.txt', Buffer.from('same'), { metadata: 'add' })
   await drive.del('/tmp.txt')
+
+  return [
+    { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 },
+    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'equal', key: '/equal-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
+    { op: 'equal', key: '/equal.txt', bytesRemoved: 0, bytesAdded: 0 },
+    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'add', key: '/new.txt', bytesRemoved: 0, bytesAdded: 3 }
+  ]
 }
 
 function sortObjects (array) {
