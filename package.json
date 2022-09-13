@@ -25,7 +25,6 @@
     "standard": "^17.0.0"
   },
   "dependencies": {
-    "binary-stream-equals": "^1.0.0",
-    "streamx": "^2.12.5"
+    "binary-stream-equals": "^1.0.0"
   }
 }
