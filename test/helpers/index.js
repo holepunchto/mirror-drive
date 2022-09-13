@@ -16,8 +16,8 @@ module.exports = {
   find
 }
 
-async function createDrives (t) {
-  const local = new Localdrive(createTmpDir(t), { metadata: createMetadata() })
+async function createDrives (t, opts) {
+  const local = new Localdrive(createTmpDir(t), { metadata: createMetadata(), ...opts })
   const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
 
   await setupDrive(local)
