@@ -3,9 +3,11 @@ const { pipelinePromise: pipeline } = require('streamx')
 
 module.exports = mirror
 
-async function * mirror (src, dst) {
+async function * mirror (src, dst, { dryRun = false } = {}) {
   await src.ready()
   await dst.ready()
+
+  const deleted = new Map()
 
   for await (const dstEntry of dst.list('/')) {
     const { key } = dstEntry
@@ -15,13 +17,14 @@ async function * mirror (src, dst) {
     if (!fileExists) {
       yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
 
-      await dst.del(key)
+      if (dryRun) deleted.set(key, true)
+      else await dst.del(key)
     }
   }
 
   for await (const srcEntry of src.list('/')) {
     const { key } = srcEntry
-    const dstEntry = await dst.entry(key)
+    const dstEntry = deleted.has(key) ? null : await dst.entry(key)
 
     if (dstEntry) {
       const srcMetadata = srcEntry.value.metadata
@@ -46,10 +49,12 @@ async function * mirror (src, dst) {
       yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength }
     }
 
-    await pipeline(
-      src.createReadStream(key),
-      dst.createWriteStream(key, { metadata: srcEntry.value.metadata })
-    )
+    if (!dryRun) {
+      await pipeline(
+        src.createReadStream(key),
+        dst.createWriteStream(key, { metadata: srcEntry.value.metadata })
+      )
+    }
   }
 }
 
