@@ -29,7 +29,7 @@ class MirrorDrive {
     for await (const v of this.iterator) {
       // No-op
     }
-  } 
+  }
 
   async * _mirror () {
     await this.src.ready()
