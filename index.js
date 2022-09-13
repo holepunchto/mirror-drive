@@ -7,6 +7,7 @@ async function * mirror (src, dst, { dryRun = false } = {}) {
   await src.ready()
   await dst.ready()
 
+  const count = { total: 0, add: 0, remove: 0, change: 0 }
   const deleted = new Map()
 
   for await (const dstEntry of dst.list('/')) {
@@ -15,7 +16,8 @@ async function * mirror (src, dst, { dryRun = false } = {}) {
 
     const fileExists = srcEntry ? !!srcEntry.value.blob : false
     if (!fileExists) {
-      yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+      count.remove++
+      yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0, count }
 
       if (dryRun) deleted.set(key, true)
       else await dst.del(key)
@@ -25,6 +27,8 @@ async function * mirror (src, dst, { dryRun = false } = {}) {
   for await (const srcEntry of src.list('/')) {
     const { key } = srcEntry
     const dstEntry = deleted.has(key) ? null : await dst.entry(key)
+
+    count.total++
 
     if (dstEntry) {
       const srcMetadata = srcEntry.value.metadata
@@ -44,9 +48,11 @@ async function * mirror (src, dst, { dryRun = false } = {}) {
     }
 
     if (dstEntry) {
-      yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength }
+      count.change++
+      yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength, count }
     } else {
-      yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength }
+      count.add++
+      yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength, count }
     }
 
     if (!dryRun) {
