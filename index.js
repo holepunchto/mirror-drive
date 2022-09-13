@@ -26,7 +26,7 @@ class MirrorDrive {
   }
 
   async done () {
-    for await (const v of this.iterator) {
+    for await (const v of this.iterator) { // eslint-disable-line no-unused-vars
       // No-op
     }
   }
