@@ -2,65 +2,90 @@ const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
 const streamEquals = require('binary-stream-equals')
 
-module.exports = mirror
+module.exports = function (src, dst, opts) {
+  return new MirrorDrive(src, dst, opts)
+}
 
-async function * mirror (src, dst, { filter, dryRun = false, allOps = false } = {}) {
-  await src.ready()
-  await dst.ready()
+class MirrorDrive {
+  constructor (src, dst, opts = {}) {
+    this.src = src
+    this.dst = dst
 
-  const count = { files: 0, add: 0, remove: 0, change: 0 }
-  const deleted = new Map()
+    this.dryRun = !!opts.dryRun
+    this.allOps = !!opts.allOps
+    this.filter = opts.filter
 
-  for await (const dstEntry of dst.list('/')) {
-    const { key } = dstEntry
-    const srcEntry = await src.entry(key)
+    this.count = { files: 0, add: 0, remove: 0, change: 0 }
+    this._deleted = new Map()
 
-    const fileExists = srcEntry ? !!srcEntry.value.blob : false
-    if (!fileExists) {
-      count.remove++
-      yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0, count: { ...count } }
-
-      if (dryRun) deleted.set(key, true)
-      else await dst.del(key)
-    }
+    this.iterator = this._mirror()
   }
 
-  for await (const srcEntry of src.list('/', { filter })) {
-    const { key } = srcEntry
-    const dstEntry = deleted.has(key) ? null : await dst.entry(key)
+  [Symbol.asyncIterator] () {
+    return this.iterator
+  }
 
-    count.files++
+  async done () {
+    for await (const v of this.iterator) {
+      // No-op
+    }
+  } 
 
-    if (dstEntry) {
-      const srcMetadata = srcEntry.value.metadata
-      const dstMetadata = dstEntry.value.metadata
+  async * _mirror () {
+    await this.src.ready()
+    await this.dst.ready()
 
-      const noMetadata = !srcMetadata && !dstMetadata
-      const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
+    for await (const dstEntry of this.dst.list('/')) {
+      const { key } = dstEntry
+      const srcEntry = await this.src.entry(key)
 
-      const sameMetadata = noMetadata || identicalMetadata
-      if (sameMetadata) {
-        const sameContents = await streamEquals(src.createReadStream(key), dst.createReadStream(key))
-        if (sameContents) {
-          if (allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0, count: { ...count } }
-          continue
-        }
+      const fileExists = srcEntry ? !!srcEntry.value.blob : false
+      if (!fileExists) {
+        this.count.remove++
+        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+
+        if (this.dryRun) this._deleted.set(key, true)
+        else await this.dst.del(key)
       }
     }
 
-    if (dstEntry) {
-      count.change++
-      yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength, count: { ...count } }
-    } else {
-      count.add++
-      yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength, count: { ...count } }
-    }
+    for await (const srcEntry of this.src.list('/', { filter: this.filter })) {
+      const { key } = srcEntry
+      const dstEntry = this._deleted.has(key) ? null : await this.dst.entry(key)
 
-    if (!dryRun) {
-      await pipeline(
-        src.createReadStream(key),
-        dst.createWriteStream(key, { metadata: srcEntry.value.metadata })
-      )
+      this.count.files++
+
+      if (dstEntry) {
+        const srcMetadata = srcEntry.value.metadata
+        const dstMetadata = dstEntry.value.metadata
+
+        const noMetadata = !srcMetadata && !dstMetadata
+        const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
+
+        const sameMetadata = noMetadata || identicalMetadata
+        if (sameMetadata) {
+          const sameContents = await streamEquals(this.src.createReadStream(key), this.dst.createReadStream(key))
+          if (sameContents) {
+            if (this.allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+            continue
+          }
+        }
+      }
+
+      if (dstEntry) {
+        this.count.change++
+        yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength }
+      } else {
+        this.count.add++
+        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength }
+      }
+
+      if (!this.dryRun) {
+        await pipeline(
+          this.src.createReadStream(key),
+          this.dst.createWriteStream(key, { metadata: srcEntry.value.metadata })
+        )
+      }
     }
   }
 }
