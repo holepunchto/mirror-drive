@@ -1,5 +1,6 @@
+const { promisify } = require('util')
+const pipeline = promisify(require('stream').pipeline)
 const streamEquals = require('binary-stream-equals')
-const { pipelinePromise: pipeline } = require('streamx')
 
 module.exports = mirror
 
