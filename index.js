@@ -3,7 +3,7 @@ const { pipelinePromise: pipeline } = require('streamx')
 
 module.exports = mirror
 
-async function * mirror (src, dst, { dryRun = false } = {}) {
+async function * mirror (src, dst, { filter, dryRun = false } = {}) {
   await src.ready()
   await dst.ready()
 
@@ -24,7 +24,7 @@ async function * mirror (src, dst, { dryRun = false } = {}) {
     }
   }
 
-  for await (const srcEntry of src.list('/')) {
+  for await (const srcEntry of src.list('/', { filter })) {
     const { key } = srcEntry
     const dstEntry = deleted.has(key) ? null : await dst.entry(key)
 
