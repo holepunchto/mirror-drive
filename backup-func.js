@@ -1,5 +1,5 @@
 
-/* module.exports = function MirrorDrive (src, dst, opts) {
+module.exports = function MirrorDrive (src, dst, opts) {
   const m = mirror(src, dst, opts)
   m.done = async function () {
     for await (const v of m) {
@@ -7,7 +7,7 @@
     }
   }
   return m
-} */
+}
 
 async function * mirror (src, dst, { filter, dryRun = false, allOps = false } = {}) {
   await src.ready()
