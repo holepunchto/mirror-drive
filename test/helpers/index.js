@@ -10,6 +10,7 @@ module.exports = {
   createDrives,
   changeDrive,
   sortObjects,
+  toArray,
   alike,
   print,
   find
@@ -54,6 +55,14 @@ function sortObjects (array) {
 
 function alike (a, b) {
   return JSON.stringify(a) === JSON.stringify(b)
+}
+
+async function toArray (iterator) {
+  const array = []
+  for await (const value of iterator) {
+    array.push(value)
+  }
+  return array
 }
 
 function find (actual, list) {
