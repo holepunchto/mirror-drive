@@ -17,6 +17,10 @@ test('mirror localdrive into hyperdrive', async function (t) {
 
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
   t.alike(sortObjects(actual), sortObjects(expected))
+
+  const m2 = mirror(local, hyper)
+  const diffs = await toArray(m2)
+  t.is(diffs.length, 0)
 })
 
 test('mirror hyperdrive into localdrive', async function (t) {
@@ -34,4 +38,8 @@ test('mirror hyperdrive into localdrive', async function (t) {
 
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
   t.alike(sortObjects(actual), sortObjects(expected))
+
+  const m2 = mirror(hyper, local)
+  const diffs = await toArray(m2)
+  t.is(diffs.length, 0)
 })
