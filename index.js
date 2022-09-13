@@ -3,11 +3,11 @@ const { pipelinePromise: pipeline } = require('streamx')
 
 module.exports = mirror
 
-async function * mirror (src, dst, { filter, dryRun = false } = {}) {
+async function * mirror (src, dst, { filter, dryRun = false, allOps = false } = {}) {
   await src.ready()
   await dst.ready()
 
-  const count = { total: 0, add: 0, remove: 0, change: 0 }
+  const count = { files: 0, add: 0, remove: 0, change: 0 }
   const deleted = new Map()
 
   for await (const dstEntry of dst.list('/')) {
@@ -17,7 +17,7 @@ async function * mirror (src, dst, { filter, dryRun = false } = {}) {
     const fileExists = srcEntry ? !!srcEntry.value.blob : false
     if (!fileExists) {
       count.remove++
-      yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0, count }
+      yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0, count: { ...count } }
 
       if (dryRun) deleted.set(key, true)
       else await dst.del(key)
@@ -28,7 +28,7 @@ async function * mirror (src, dst, { filter, dryRun = false } = {}) {
     const { key } = srcEntry
     const dstEntry = deleted.has(key) ? null : await dst.entry(key)
 
-    count.total++
+    count.files++
 
     if (dstEntry) {
       const srcMetadata = srcEntry.value.metadata
@@ -41,7 +41,7 @@ async function * mirror (src, dst, { filter, dryRun = false } = {}) {
       if (sameMetadata) {
         const sameContents = await streamEquals(src.createReadStream(key), dst.createReadStream(key))
         if (sameContents) {
-          // yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+          if (allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0, count: { ...count } }
           continue
         }
       }
@@ -49,10 +49,10 @@ async function * mirror (src, dst, { filter, dryRun = false } = {}) {
 
     if (dstEntry) {
       count.change++
-      yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength, count }
+      yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength, count: { ...count } }
     } else {
       count.add++
-      yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength, count }
+      yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength, count: { ...count } }
     }
 
     if (!dryRun) {

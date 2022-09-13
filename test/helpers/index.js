@@ -9,7 +9,10 @@ const Corestore = require('corestore')
 module.exports = {
   createDrives,
   changeDrive,
-  sortObjects
+  sortObjects,
+  alike,
+  print,
+  find
 }
 
 async function createDrives (t) {
@@ -28,7 +31,7 @@ async function setupDrive (drive) {
   } */
 
   await drive.put('/equal.txt', Buffer.from('same'))
-  await drive.put('/equal-with-meta.txt', Buffer.from('same'), { metadata: 'same' })
+  await drive.put('/equal-meta.txt', Buffer.from('same'), { metadata: 'same' })
 
   await drive.put('/buffer.txt', Buffer.from('same'))
   await drive.put('/meta.txt', Buffer.from('same'), { metadata: 'same' })
@@ -47,6 +50,25 @@ async function changeDrive (drive) {
 
 function sortObjects (array) {
   return array.map(JSON.stringify).sort()
+}
+
+function alike (a, b) {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+function find (actual, list) {
+  for (const expected of list) {
+    if (alike(actual, expected)) {
+      return true
+    }
+  }
+  return false
+}
+
+function print (msg, diff) {
+  const o = JSON.parse(JSON.stringify(diff))
+  delete o.count
+  console.log(msg, o, 'count:', diff.count)
 }
 
 function createMetadata () {
