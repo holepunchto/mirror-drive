@@ -25,10 +25,6 @@ async function createDrives (t, opts) {
 }
 
 async function setupDrive (drive) {
-  /* for await (const file of drive.list()) {
-    await drive.del(file.key)
-  } */
-
   await drive.put('/equal.txt', Buffer.from('same'))
   await drive.put('/equal-meta.txt', Buffer.from('same'), { metadata: 'same' })
 
