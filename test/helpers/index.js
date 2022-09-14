@@ -11,9 +11,7 @@ module.exports = {
   changeDrive,
   sortObjects,
   toArray,
-  alike,
-  print,
-  find
+  alike
 }
 
 async function createDrives (t, opts) {
@@ -73,21 +71,6 @@ async function toArray (iterator) {
     array.push(value)
   }
   return array
-}
-
-function find (actual, list) {
-  for (const expected of list) {
-    if (alike(actual, expected)) {
-      return true
-    }
-  }
-  return false
-}
-
-function print (msg, diff) {
-  const o = JSON.parse(JSON.stringify(diff))
-  delete o.count
-  console.log(msg, o, 'count:', diff.count)
 }
 
 function createMetadata () {
