@@ -14,8 +14,6 @@ test('prune basic', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/new-tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
-
-  t.alike(m.count, { files: 6, add: 0, remove: 1, change: 0 })
 })
 
 test('prune - dry run', async function (t) {
@@ -30,6 +28,4 @@ test('prune - dry run', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/new-tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
-
-  t.alike(m.count, { files: 6, add: 0, remove: 1, change: 0 })
 })
