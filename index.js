@@ -45,7 +45,7 @@ class MirrorDrive {
     for await (const [key, srcEntry, dstEntry] of list(this.src, this.dst, { filter: this.filter })) {
       this.count.files++
 
-      if (await same(this.src, this.dst, key, srcEntry, dstEntry)) {
+      if (await same(this, srcEntry, dstEntry)) {
         if (this.allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         continue
       }
@@ -79,24 +79,21 @@ function isFile (entry) {
   return entry ? !!entry.value.blob : false
 }
 
-async function same (src, dst, key, srcEntry, dstEntry) {
-  if (dstEntry) {
-    const srcMetadata = srcEntry.value.metadata
-    const dstMetadata = dstEntry.value.metadata
+async function same (m, srcEntry, dstEntry) {
+  if (!dstEntry) return false
 
-    const noMetadata = !srcMetadata && !dstMetadata
-    const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
+  const { key } = srcEntry
+  const srcMetadata = srcEntry.value.metadata
+  const dstMetadata = dstEntry.value.metadata
 
-    const sameMetadata = noMetadata || identicalMetadata
-    if (sameMetadata) {
-      const sameContents = await streamEquals(src.createReadStream(key), dst.createReadStream(key))
-      if (sameContents) {
-        return true
-      }
-    }
-  }
+  const noMetadata = !srcMetadata && !dstMetadata
+  const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
 
-  return false
+  const sameMetadata = noMetadata || identicalMetadata
+  if (!sameMetadata) return false
+
+  const sameContents = await streamEquals(m.src.createReadStream(key), m.dst.createReadStream(key))
+  return sameContents
 }
 
 function alike (a, b) {
