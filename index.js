@@ -33,10 +33,7 @@ class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
-    for await (const dstEntry of this.dst.list('/')) {
-      const { key } = dstEntry
-      const srcEntry = await this.src.entry(key)
-
+    for await (const [key, dstEntry, srcEntry] of list(this.dst, this.src)) {
       if (!isFile(srcEntry)) {
         this.count.remove++
         yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
@@ -45,10 +42,7 @@ class MirrorDrive {
       }
     }
 
-    for await (const srcEntry of this.src.list('/', { filter: this.filter })) {
-      const { key } = srcEntry
-      const dstEntry = await this.dst.entry(key)
-
+    for await (const [key, srcEntry, dstEntry] of list(this.src, this.dst, { filter: this.filter })) {
       this.count.files++
 
       if (await same(this.src, this.dst, key, srcEntry, dstEntry)) {
@@ -71,6 +65,13 @@ class MirrorDrive {
         )
       }
     }
+  }
+}
+
+async function * list (a, b, opts) {
+  for await (const entryA of a.list('/', opts)) {
+    const entryB = await b.entry(entryA.key)
+    yield [entryA.key, entryA, entryB]
   }
 }
 
