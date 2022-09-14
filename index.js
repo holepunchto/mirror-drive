@@ -12,6 +12,7 @@ class MirrorDrive {
     this.src = src
     this.dst = dst
 
+    this.prefix = opts.prefix || '/'
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune === undefined ? true : !!opts.prune
     this.allOps = !!opts.allOps
@@ -36,7 +37,7 @@ class MirrorDrive {
     await this.dst.ready()
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of list(this.dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
         if (!isFile(srcEntry)) {
           this.count.remove++
           yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
@@ -46,7 +47,7 @@ class MirrorDrive {
       }
     }
 
-    for await (const [key, srcEntry, dstEntry] of list(this.src, this.dst, { filter: this.filter })) {
+    for await (const [key, srcEntry, dstEntry] of list(this.prefix, this.src, this.dst, { filter: this.filter })) {
       this.count.files++
 
       if (await same(this, srcEntry, dstEntry)) {
@@ -72,8 +73,8 @@ class MirrorDrive {
   }
 }
 
-async function * list (a, b, opts) {
-  for await (const entryA of a.list('/', opts)) {
+async function * list (prefix, a, b, opts) {
+  for await (const entryA of a.list(prefix, opts)) {
     const entryB = await b.entry(entryA.key)
     yield [entryA.key, entryA, entryB]
   }
