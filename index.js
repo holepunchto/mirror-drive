@@ -16,7 +16,6 @@ class MirrorDrive {
     this.filter = opts.filter
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
-
     this.iterator = this._mirror()
   }
 
@@ -38,8 +37,7 @@ class MirrorDrive {
       const { key } = dstEntry
       const srcEntry = await this.src.entry(key)
 
-      const fileExists = srcEntry ? !!srcEntry.value.blob : false
-      if (!fileExists) {
+      if (!isFile(srcEntry)) {
         this.count.remove++
         yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
 
@@ -53,21 +51,9 @@ class MirrorDrive {
 
       this.count.files++
 
-      if (dstEntry) {
-        const srcMetadata = srcEntry.value.metadata
-        const dstMetadata = dstEntry.value.metadata
-
-        const noMetadata = !srcMetadata && !dstMetadata
-        const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
-
-        const sameMetadata = noMetadata || identicalMetadata
-        if (sameMetadata) {
-          const sameContents = await streamEquals(this.src.createReadStream(key), this.dst.createReadStream(key))
-          if (sameContents) {
-            if (this.allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
-            continue
-          }
-        }
+      if (await same(this.src, this.dst, key, srcEntry, dstEntry)) {
+        if (this.allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+        continue
       }
 
       if (dstEntry) {
@@ -86,6 +72,30 @@ class MirrorDrive {
       }
     }
   }
+}
+
+function isFile (entry) {
+  return entry ? !!entry.value.blob : false
+}
+
+async function same (src, dst, key, srcEntry, dstEntry) {
+  if (dstEntry) {
+    const srcMetadata = srcEntry.value.metadata
+    const dstMetadata = dstEntry.value.metadata
+
+    const noMetadata = !srcMetadata && !dstMetadata
+    const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
+
+    const sameMetadata = noMetadata || identicalMetadata
+    if (sameMetadata) {
+      const sameContents = await streamEquals(src.createReadStream(key), dst.createReadStream(key))
+      if (sameContents) {
+        return true
+      }
+    }
+  }
+
+  return false
 }
 
 function alike (a, b) {
