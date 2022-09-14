@@ -6,6 +6,7 @@ test('remove', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   await local.del('/tmp.txt')
+  t.ok(await hyper.entry('/tmp.txt'))
 
   const m = mirror(local, hyper)
 
@@ -15,12 +16,15 @@ test('remove', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
+
+  t.absent(await hyper.entry('/tmp.txt'))
 })
 
 test('add', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   await local.put('/new-tmp.txt', Buffer.from('same'))
+  t.absent(await hyper.entry('/new-tmp.txt'))
 
   const m = mirror(local, hyper)
 
@@ -30,12 +34,15 @@ test('add', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'add', key: '/new-tmp.txt', bytesRemoved: 0, bytesAdded: 4 })
+
+  t.alike(await hyper.get('/new-tmp.txt'), Buffer.from('same'))
 })
 
 test('change content', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   await local.put('/buffer.txt', Buffer.from('edit'))
+  t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
 
   const m = mirror(local, hyper)
 
@@ -45,12 +52,15 @@ test('change content', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 })
+
+  t.alike(await hyper.get('/buffer.txt'), Buffer.from('edit'))
 })
 
 test('change metadata', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   await local.put('/meta.txt', Buffer.from('same'), { metadata: 'edit' })
+  t.alike((await hyper.entry('/meta.txt')).value.metadata, 'same')
 
   const m = mirror(local, hyper)
 
@@ -60,4 +70,6 @@ test('change metadata', async function (t) {
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 })
+
+  t.alike((await hyper.entry('/meta.txt')).value.metadata, 'edit')
 })
