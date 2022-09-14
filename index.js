@@ -13,6 +13,7 @@ class MirrorDrive {
     this.dst = dst
 
     this.dryRun = !!opts.dryRun
+    this.prune = opts.prune === undefined ? true : !!opts.prune
     this.allOps = !!opts.allOps
     this.filter = opts.filter
 
@@ -34,12 +35,14 @@ class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
-    for await (const [key, dstEntry, srcEntry] of list(this.dst, this.src)) {
-      if (!isFile(srcEntry)) {
-        this.count.remove++
-        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+    if (this.prune) {
+      for await (const [key, dstEntry, srcEntry] of list(this.dst, this.src)) {
+        if (!isFile(srcEntry)) {
+          this.count.remove++
+          yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
 
-        if (!this.dryRun) await this.dst.del(key)
+          if (!this.dryRun) await this.dst.del(key)
+        }
       }
     }
 
