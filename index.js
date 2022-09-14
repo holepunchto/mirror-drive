@@ -16,7 +16,6 @@ class MirrorDrive {
     this.filter = opts.filter
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
-    this._deleted = new Map()
 
     this.iterator = this._mirror()
   }
@@ -44,14 +43,13 @@ class MirrorDrive {
         this.count.remove++
         yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
 
-        if (this.dryRun) this._deleted.set(key, true)
-        else await this.dst.del(key)
+        if (!this.dryRun) await this.dst.del(key)
       }
     }
 
     for await (const srcEntry of this.src.list('/', { filter: this.filter })) {
       const { key } = srcEntry
-      const dstEntry = this._deleted.has(key) ? null : await this.dst.entry(key)
+      const dstEntry = await this.dst.entry(key)
 
       this.count.files++
 
