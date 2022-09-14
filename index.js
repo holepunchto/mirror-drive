@@ -1,5 +1,6 @@
 const { promisify } = require('util')
 const pipeline = promisify(require('stream').pipeline)
+const deepEqual = require('deep-equal')
 const streamEquals = require('binary-stream-equals')
 
 module.exports = function (src, dst, opts) {
@@ -87,15 +88,11 @@ async function same (m, srcEntry, dstEntry) {
   const dstMetadata = dstEntry.value.metadata
 
   const noMetadata = !srcMetadata && !dstMetadata
-  const identicalMetadata = !!(srcMetadata && dstMetadata && alike(srcMetadata, dstMetadata))
+  const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
 
   const sameMetadata = noMetadata || identicalMetadata
   if (!sameMetadata) return false
 
   const sameContents = await streamEquals(m.src.createReadStream(key), m.dst.createReadStream(key))
   return sameContents
-}
-
-function alike (a, b) {
-  return JSON.stringify(a) === JSON.stringify(b)
 }
