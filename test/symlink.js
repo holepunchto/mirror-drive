@@ -17,16 +17,7 @@ test('symlink basic', async function (t) {
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'add', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
 
-  t.alike(await hyper.entry('/tmp.shortcut'), {
-    seq: 7,
-    key: '/tmp.shortcut',
-    value: {
-      executable: false,
-      linkname: '/tmp.txt',
-      blob: null,
-      metadata: null
-    }
-  })
+  t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/tmp.txt')
 })
 
 test('symlink prune', async function (t) {
