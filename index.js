@@ -59,10 +59,16 @@ class MirrorDrive {
         yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength }
       } else {
         this.count.add++
-        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob.byteLength }
+        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob ? srcEntry.value.blob.byteLength : 0 }
       }
 
-      if (!this.dryRun) {
+      if (this.dryRun) {
+        continue
+      }
+
+      if (srcEntry.value.linkname) {
+        await this.dst.symlink(key, srcEntry.value.linkname)
+      } else {
         await pipeline(
           this.src.createReadStream(key),
           this.dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
