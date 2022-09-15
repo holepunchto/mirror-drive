@@ -20,7 +20,7 @@ test('executable basic', { skip: isWin }, async function (t) {
   t.alike((await hyper.entry('/script.sh')).value.executable, true)
 })
 
-test('executable changed', { skip: isWin }, async function (t) {
+test('executable change', { skip: isWin }, async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
   await local.put('/script.sh', Buffer.from('# bash'), { executable: false })
