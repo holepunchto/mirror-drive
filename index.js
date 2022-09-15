@@ -93,11 +93,10 @@ function pipeline (rs, ws) {
 }
 
 async function same (m, srcEntry, dstEntry) {
-  const { key } = srcEntry
   if (!dstEntry) return false
   if (!sizeEquals(srcEntry, dstEntry)) return false
   if (!metadataEquals(srcEntry, dstEntry)) return false
-  return streamEquals(m.src.createReadStream(key), m.dst.createReadStream(key))
+  return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
 function metadataEquals (srcEntry, dstEntry) {
