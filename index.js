@@ -114,7 +114,7 @@ function sizeEquals (srcEntry, dstEntry) {
   const dstBlob = dstEntry.value.blob
 
   if (!srcBlob && !dstBlob) return true
-  if ((!srcBlob && dstBlob) || (srcBlob && !dstBlob)) return false
+  if (!srcBlob || !dstBlob) return false
 
   return srcBlob.byteLength === dstBlob.byteLength
 }
