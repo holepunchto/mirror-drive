@@ -8,7 +8,7 @@ test('mirror localdrive into hyperdrive', async function (t) {
   const actual = []
   const expected = await changeDrive(local)
 
-  const m = mirror(local, hyper, { allOps: true })
+  const m = mirror(local, hyper, { includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
   for await (const diff of m) {
@@ -30,7 +30,7 @@ test('mirror hyperdrive into localdrive', async function (t) {
   const actual = []
   const expected = await changeDrive(hyper)
 
-  const m = mirror(hyper, local, { allOps: true })
+  const m = mirror(hyper, local, { includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
   for await (const diff of m) {
@@ -52,7 +52,7 @@ test('prune disabled', async function (t) {
   const actual = []
   const expected = (await changeDrive(local)).filter(exp => exp.op !== 'remove')
 
-  const m = mirror(local, hyper, { prune: false, allOps: true })
+  const m = mirror(local, hyper, { prune: false, includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
   for await (const diff of m) {

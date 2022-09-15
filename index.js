@@ -1,5 +1,3 @@
-const { promisify } = require('util')
-const pipeline = promisify(require('stream').pipeline)
 const deepEqual = require('deep-equal')
 const streamEquals = require('binary-stream-equals')
 
@@ -14,9 +12,9 @@ class MirrorDrive {
 
     this.prefix = opts.prefix || '/'
     this.dryRun = !!opts.dryRun
-    this.prune = opts.prune === undefined ? true : !!opts.prune
-    this.allOps = !!opts.allOps
-    this.filter = opts.filter
+    this.prune = opts.prune !== false
+    this.includeEquals = !!opts.includeEquals
+    this.filter = opts.filter || null
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.iterator = this._mirror()
@@ -27,8 +25,9 @@ class MirrorDrive {
   }
 
   async done () {
-    for await (const v of this.iterator) { // eslint-disable-line no-unused-vars
-      // No-op
+    while (true) {
+      const { done } = await this.iterator.next()
+      if (done) break
     }
   }
 
@@ -38,12 +37,12 @@ class MirrorDrive {
 
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
-        if (!isFile(srcEntry)) {
-          this.count.remove++
-          yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+        if (isFile(srcEntry)) continue
 
-          if (!this.dryRun) await this.dst.del(key)
-        }
+        this.count.remove++
+        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+
+        if (!this.dryRun) await this.dst.del(key)
       }
     }
 
@@ -51,7 +50,7 @@ class MirrorDrive {
       this.count.files++
 
       if (await same(this, srcEntry, dstEntry)) {
-        if (this.allOps) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+        if (this.includeEquals) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         continue
       }
 
@@ -66,7 +65,7 @@ class MirrorDrive {
       if (!this.dryRun) {
         await pipeline(
           this.src.createReadStream(key),
-          this.dst.createWriteStream(key, { metadata: srcEntry.value.metadata })
+          this.dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
     }
@@ -82,6 +81,15 @@ async function * list (prefix, a, b, opts) {
 
 function isFile (entry) {
   return entry ? !!entry.value.blob : false
+}
+
+function pipeline (rs, ws) {
+  return new Promise((resolve, reject) => {
+    rs.pipe(ws, (err) => {
+      if (err) reject(err)
+      else resolve()
+    })
+  })
 }
 
 async function same (m, srcEntry, dstEntry) {

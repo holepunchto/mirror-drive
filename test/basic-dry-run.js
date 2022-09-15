@@ -10,7 +10,7 @@ test('dry run - mirror localdrive into hyperdrive', async function (t) {
   for (let i = 0; i < 2; i++) {
     const actual = []
 
-    const m = mirror(local, hyper, { dryRun: true, allOps: true })
+    const m = mirror(local, hyper, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
     for await (const diff of m) {
@@ -31,7 +31,7 @@ test('dry run - mirror hyperdrive into localdrive', async function (t) {
   for (let i = 0; i < 2; i++) {
     const actual = []
 
-    const m = mirror(hyper, local, { dryRun: true, allOps: true })
+    const m = mirror(hyper, local, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
     for await (const diff of m) {
