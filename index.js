@@ -40,7 +40,7 @@ class MirrorDrive {
         if (srcEntry) continue
 
         this.count.remove++
-        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob ? dstEntry.value.blob.byteLength : 0, bytesAdded: 0 }
+        yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
 
         if (!this.dryRun) await this.dst.del(key)
       }
@@ -56,10 +56,10 @@ class MirrorDrive {
 
       if (dstEntry) {
         this.count.change++
-        yield { op: 'change', key, bytesRemoved: dstEntry.value.blob ? dstEntry.value.blob.byteLength : 0, bytesAdded: srcEntry.value.blob ? srcEntry.value.blob.byteLength : 0 }
+        yield { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
       } else {
         this.count.add++
-        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob ? srcEntry.value.blob.byteLength : 0 }
+        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
       }
 
       if (this.dryRun) {
@@ -76,6 +76,10 @@ class MirrorDrive {
       }
     }
   }
+}
+
+function blobLength (entry) {
+  return entry.value.blob ? entry.value.blob.byteLength : 0
 }
 
 async function * list (prefix, a, b, opts) {
