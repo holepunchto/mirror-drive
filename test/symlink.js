@@ -20,6 +20,24 @@ test('symlink basic', async function (t) {
   t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/tmp.txt')
 })
 
+test('symlink change', async function (t) {
+  const { local, hyper } = await createDrives(t, undefined)
+
+  await local.symlink('/tmp.shortcut', '/buffer.txt')
+  await hyper.symlink('/tmp.shortcut', '/tmp.txt')
+
+  const m = mirror(local, hyper)
+
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  const diffs = await toArray(m)
+  t.alike(m.count, { files: 7, add: 0, remove: 0, change: 1 })
+
+  t.is(diffs.length, 1)
+  t.alike(diffs[0], { op: 'change', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
+
+  t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/buffer.txt')
+})
+
 test('symlink prune', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
