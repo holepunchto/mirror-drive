@@ -101,6 +101,8 @@ function pipeline (rs, ws) {
 async function same (m, srcEntry, dstEntry) {
   if (!dstEntry) return false
 
+  if (srcEntry.value.executable !== dstEntry.value.executable) return false
+
   if (!linkEquals(srcEntry, dstEntry)) return false
   if (srcEntry.value.linkname && dstEntry.value.linkname) return true
 
