@@ -47,3 +47,21 @@ test('symlink prune', async function (t) {
   t.absent(await local.entry('/tmp.shortcut'))
   t.absent(await hyper.entry('/tmp.shortcut'))
 })
+
+test('symlink same', async function (t) {
+  const { local, hyper } = await createDrives(t, undefined)
+
+  await local.symlink('/tmp.shortcut', '/tmp.txt')
+  await hyper.symlink('/tmp.shortcut', '/tmp.txt')
+
+  const m = mirror(local, hyper)
+
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  const diffs = await toArray(m)
+  t.alike(m.count, { files: 7, add: 0, remove: 0, change: 0 })
+
+  t.is(diffs.length, 0)
+
+  t.ok(await local.entry('/tmp.shortcut'))
+  t.ok(await hyper.entry('/tmp.shortcut'))
+})

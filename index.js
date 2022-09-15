@@ -37,7 +37,7 @@ class MirrorDrive {
 
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
-        if (isFile(srcEntry)) continue
+        if (srcEntry) continue
 
         this.count.remove++
         yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob ? dstEntry.value.blob.byteLength : 0, bytesAdded: 0 }
@@ -56,7 +56,7 @@ class MirrorDrive {
 
       if (dstEntry) {
         this.count.change++
-        yield { op: 'change', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: srcEntry.value.blob.byteLength }
+        yield { op: 'change', key, bytesRemoved: dstEntry.value.blob ? dstEntry.value.blob.byteLength : 0, bytesAdded: srcEntry.value.blob ? srcEntry.value.blob.byteLength : 0 }
       } else {
         this.count.add++
         yield { op: 'add', key, bytesRemoved: 0, bytesAdded: srcEntry.value.blob ? srcEntry.value.blob.byteLength : 0 }
@@ -85,10 +85,6 @@ async function * list (prefix, a, b, opts) {
   }
 }
 
-function isFile (entry) {
-  return entry ? !!entry.value.blob : false
-}
-
 function pipeline (rs, ws) {
   return new Promise((resolve, reject) => {
     rs.pipe(ws, (err) => {
@@ -100,6 +96,10 @@ function pipeline (rs, ws) {
 
 async function same (m, srcEntry, dstEntry) {
   if (!dstEntry) return false
+
+  if (!linkEquals(srcEntry, dstEntry)) return false
+  if (srcEntry.value.linkname && dstEntry.value.linkname) return true
+
   if (!sizeEquals(srcEntry, dstEntry)) return false
   if (!metadataEquals(srcEntry, dstEntry)) return false
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
@@ -123,4 +123,14 @@ function sizeEquals (srcEntry, dstEntry) {
   if (!srcBlob || !dstBlob) return false
 
   return srcBlob.byteLength === dstBlob.byteLength
+}
+
+function linkEquals (srcEntry, dstEntry) {
+  const srcLink = srcEntry.value.linkname
+  const dstLink = dstEntry.value.linkname
+
+  if (!srcLink && !dstLink) return true
+  if (!srcLink || !dstLink) return false
+
+  return srcLink === dstLink
 }
