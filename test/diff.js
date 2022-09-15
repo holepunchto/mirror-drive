@@ -56,6 +56,24 @@ test('change content', async function (t) {
   t.alike(await hyper.get('/buffer.txt'), Buffer.from('edit'))
 })
 
+test('change size', async function (t) {
+  const { local, hyper } = await createDrives(t)
+
+  await local.put('/buffer.txt', Buffer.from('edit-ed'))
+  t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
+
+  const m = mirror(local, hyper)
+
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  const diffs = await toArray(m)
+  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1 })
+
+  t.is(diffs.length, 1)
+  t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 7 })
+
+  t.alike(await hyper.get('/buffer.txt'), Buffer.from('edit-ed'))
+})
+
 test('change metadata', async function (t) {
   const { local, hyper } = await createDrives(t)
 
