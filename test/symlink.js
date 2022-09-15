@@ -2,7 +2,7 @@ const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
 const mirror = require('../index.js')
 
-test('symlink basic (local to hyper)', async function (t) {
+test('symlink basic', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
   await local.symlink('/tmp.shortcut', '/tmp.txt')
@@ -27,4 +27,23 @@ test('symlink basic (local to hyper)', async function (t) {
       metadata: null
     }
   })
+})
+
+test('symlink prune', async function (t) {
+  const { local, hyper } = await createDrives(t, undefined)
+
+  t.absent(await local.entry('/tmp.shortcut'))
+  await hyper.symlink('/tmp.shortcut', '/tmp.txt')
+
+  const m = mirror(local, hyper)
+
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  const diffs = await toArray(m)
+  t.alike(m.count, { files: 6, add: 0, remove: 1, change: 0 })
+
+  t.is(diffs.length, 1)
+  t.alike(diffs[0], { op: 'remove', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
+
+  t.absent(await local.entry('/tmp.shortcut'))
+  t.absent(await hyper.entry('/tmp.shortcut'))
 })

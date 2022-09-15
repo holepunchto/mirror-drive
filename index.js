@@ -40,7 +40,7 @@ class MirrorDrive {
         if (isFile(srcEntry)) continue
 
         this.count.remove++
-        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob.byteLength, bytesAdded: 0 }
+        yield { op: 'remove', key, bytesRemoved: dstEntry.value.blob ? dstEntry.value.blob.byteLength : 0, bytesAdded: 0 }
 
         if (!this.dryRun) await this.dst.del(key)
       }
