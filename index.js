@@ -93,18 +93,29 @@ function pipeline (rs, ws) {
 }
 
 async function same (m, srcEntry, dstEntry) {
-  if (!dstEntry) return false
-
   const { key } = srcEntry
+  if (!dstEntry) return false
+  if (!sizeEquals(srcEntry, dstEntry)) return false
+  if (!metadataEquals(srcEntry, dstEntry)) return false
+  return streamEquals(m.src.createReadStream(key), m.dst.createReadStream(key))
+}
+
+function metadataEquals (srcEntry, dstEntry) {
   const srcMetadata = srcEntry.value.metadata
   const dstMetadata = dstEntry.value.metadata
 
   const noMetadata = !srcMetadata && !dstMetadata
   const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
 
-  const sameMetadata = noMetadata || identicalMetadata
-  if (!sameMetadata) return false
+  return noMetadata || identicalMetadata
+}
 
-  const sameContents = await streamEquals(m.src.createReadStream(key), m.dst.createReadStream(key))
-  return sameContents
+function sizeEquals (srcEntry, dstEntry) {
+  const srcBlob = srcEntry.value.blob
+  const dstBlob = dstEntry.value.blob
+
+  if (!srcBlob && !dstBlob) return true
+  if ((!srcBlob && dstBlob) || (srcBlob && !dstBlob)) return false
+
+  return srcBlob.byteLength === dstBlob.byteLength
 }
