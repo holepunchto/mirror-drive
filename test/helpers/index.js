@@ -6,12 +6,15 @@ const Localdrive = require('localdrive')
 const Hyperdrive = require('hyperdrive')
 const Corestore = require('corestore')
 
+const isWin = os.platform() === 'win32'
+
 module.exports = {
   createDrives,
   changeDrive,
   sortObjects,
   toArray,
-  alike
+  alike,
+  isWin
 }
 
 async function createDrives (t, opts) {
