@@ -101,7 +101,6 @@ test('options metadataEquals - new entry', async function (t) {
   t.plan(5)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
-  await hyper.ready()
 
   await local.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
   t.absent(await hyper.entry('/tmp.txt'))
