@@ -14,7 +14,6 @@ const src = new Localdrive('./src')
 const dst = new Hyperdrive(store)
 
 const mirror = new MirrorDrive(src, dst)
-
 console.log(mirror.count) // => { files: 0, add: 0, remove: 0, change: 0 }
 
 for await (const diff of mirror) {
