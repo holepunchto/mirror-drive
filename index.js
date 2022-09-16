@@ -100,8 +100,7 @@ async function same (m, srcEntry, dstEntry) {
   if (srcEntry.value.executable !== dstEntry.value.executable) return false
 
   const linkEqual = linkEquals(srcEntry, dstEntry)
-  if (linkEqual === 'equal') return true
-  else if (linkEqual === 'change') return false
+  if (linkEqual) return linkEqual === 'equal'
 
   if (!sizeEquals(srcEntry, dstEntry)) return false
   if (!metadataEquals(srcEntry, dstEntry)) return false
