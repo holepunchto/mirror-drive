@@ -1,11 +1,7 @@
 const deepEqual = require('deep-equal')
 const streamEquals = require('binary-stream-equals')
 
-module.exports = function (src, dst, opts) {
-  return new MirrorDrive(src, dst, opts)
-}
-
-class MirrorDrive {
+module.exports = class MirrorDrive {
   constructor (src, dst, opts = {}) {
     this.src = src
     this.dst = dst

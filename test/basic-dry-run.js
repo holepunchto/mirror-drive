@@ -1,6 +1,6 @@
 const test = require('brittle')
 const { createDrives, changeDrive, sortObjects } = require('./helpers/index.js')
-const mirror = require('../index.js')
+const MirrorDrive = require('../index.js')
 
 test('dry run - mirror localdrive into hyperdrive', async function (t) {
   const { local, hyper } = await createDrives(t)
@@ -10,7 +10,7 @@ test('dry run - mirror localdrive into hyperdrive', async function (t) {
   for (let i = 0; i < 2; i++) {
     const actual = []
 
-    const m = mirror(local, hyper, { dryRun: true, includeEquals: true })
+    const m = new MirrorDrive(local, hyper, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
     for await (const diff of m) {
@@ -31,7 +31,7 @@ test('dry run - mirror hyperdrive into localdrive', async function (t) {
   for (let i = 0; i < 2; i++) {
     const actual = []
 
-    const m = mirror(hyper, local, { dryRun: true, includeEquals: true })
+    const m = new MirrorDrive(hyper, local, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
 
     for await (const diff of m) {

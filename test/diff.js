@@ -1,6 +1,6 @@
 const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
-const mirror = require('../index.js')
+const MirrorDrive = require('../index.js')
 
 test('remove', async function (t) {
   const { local, hyper } = await createDrives(t)
@@ -8,7 +8,7 @@ test('remove', async function (t) {
   await local.del('/tmp.txt')
   t.ok(await hyper.entry('/tmp.txt'))
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -26,7 +26,7 @@ test('add', async function (t) {
   await local.put('/new-tmp.txt', Buffer.from('same'))
   t.absent(await hyper.entry('/new-tmp.txt'))
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -44,7 +44,7 @@ test('change content', async function (t) {
   await local.put('/buffer.txt', Buffer.from('edit'))
   t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -62,7 +62,7 @@ test('change size', async function (t) {
   await local.put('/buffer.txt', Buffer.from('edit-ed'))
   t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -80,7 +80,7 @@ test('change metadata', async function (t) {
   await local.put('/meta.txt', Buffer.from('same'), { metadata: 'edit' })
   t.alike((await hyper.entry('/meta.txt')).value.metadata, 'same')
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)

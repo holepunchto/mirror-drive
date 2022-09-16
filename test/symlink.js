@@ -1,6 +1,6 @@
 const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
-const mirror = require('../index.js')
+const MirrorDrive = require('../index.js')
 
 test('symlink basic', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
@@ -8,7 +8,7 @@ test('symlink basic', async function (t) {
   await local.symlink('/tmp.shortcut', '/tmp.txt')
   t.absent(await hyper.entry('/tmp.shortcut'))
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -26,7 +26,7 @@ test('symlink change', async function (t) {
   await local.symlink('/tmp.shortcut', '/buffer.txt')
   await hyper.symlink('/tmp.shortcut', '/tmp.txt')
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -44,7 +44,7 @@ test('symlink prune', async function (t) {
   t.absent(await local.entry('/tmp.shortcut'))
   await hyper.symlink('/tmp.shortcut', '/tmp.txt')
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
@@ -63,7 +63,7 @@ test('symlink same', async function (t) {
   await local.symlink('/tmp.shortcut', '/tmp.txt')
   await hyper.symlink('/tmp.shortcut', '/tmp.txt')
 
-  const m = mirror(local, hyper)
+  const m = new MirrorDrive(local, hyper)
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
   const diffs = await toArray(m)
