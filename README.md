@@ -50,7 +50,8 @@ Available `options`:
   dryRun: false,
   prune: true,
   includeEquals: false,
-  filter: (key) => true
+  filter: (key) => true,
+  metadataEquals: (srcMetadata, dstMetadata) => { ... }
 }
 ```
 

@@ -17,12 +17,14 @@ module.exports = {
   isWin
 }
 
-async function createDrives (t, opts) {
+async function createDrives (t, opts, { setup = true } = {}) {
   const local = new Localdrive(createTmpDir(t), { metadata: createMetadata(), ...opts })
   const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
 
-  await setupDrive(local)
-  await setupDrive(hyper)
+  if (setup) {
+    await setupDrive(local)
+    await setupDrive(hyper)
+  }
 
   return { local, hyper }
 }

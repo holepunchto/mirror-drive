@@ -11,6 +11,7 @@ module.exports = class MirrorDrive {
     this.prune = opts.prune !== false
     this.includeEquals = !!opts.includeEquals
     this.filter = opts.filter || null
+    this.metadataEquals = opts.metadataEquals || null
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.iterator = this._mirror()
@@ -103,13 +104,17 @@ async function same (m, srcEntry, dstEntry) {
   if (linkEqual) return linkEqual === 'equal'
 
   if (!sizeEquals(srcEntry, dstEntry)) return false
-  if (!metadataEquals(srcEntry, dstEntry)) return false
+  if (!metadataEquals(m, srcEntry, dstEntry)) return false
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
-function metadataEquals (srcEntry, dstEntry) {
+function metadataEquals (m, srcEntry, dstEntry) {
   const srcMetadata = srcEntry.value.metadata
   const dstMetadata = dstEntry.value.metadata
+
+  if (m.metadataEquals) {
+    return m.metadataEquals(srcMetadata, dstMetadata)
+  }
 
   const noMetadata = !srcMetadata && !dstMetadata
   const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
