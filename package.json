@@ -20,7 +20,7 @@
   "devDependencies": {
     "brittle": "^3.1.0",
     "corestore": "^6.0.6",
-    "hyperdrive": "^11.0.0-alpha.4",
+    "hyperdrive": "next",
     "localdrive": "^1.1.0",
     "standard": "^17.0.0"
   },
