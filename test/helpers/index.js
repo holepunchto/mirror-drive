@@ -21,6 +21,9 @@ async function createDrives (t, opts, { setup = true } = {}) {
   const local = new Localdrive(createTmpDir(t), { metadata: createMetadata(), ...opts })
   const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
 
+  t.teardown(() => local.close())
+  t.teardown(() => hyper.close())
+
   if (setup) {
     await setupDrive(local)
     await setupDrive(hyper)
@@ -86,6 +89,6 @@ function createMetadata () {
 function createTmpDir (t) {
   const tmpdir = path.join(os.tmpdir(), 'mirror-drive-test-')
   const dir = fs.mkdtempSync(tmpdir)
-  t.teardown(() => fsp.rm(dir, { recursive: true }))
+  t.teardown(() => fsp.rm(dir, { recursive: true }), { order: 1 })
   return dir
 }
