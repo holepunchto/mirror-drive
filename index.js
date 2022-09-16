@@ -99,8 +99,9 @@ async function same (m, srcEntry, dstEntry) {
 
   if (srcEntry.value.executable !== dstEntry.value.executable) return false
 
-  if (!linkEquals(srcEntry, dstEntry)) return false
-  if (srcEntry.value.linkname && dstEntry.value.linkname) return true
+  const linkEqual = linkEquals(srcEntry, dstEntry)
+  if (linkEqual === 'equal') return true
+  else if (linkEqual === 'change') return false
 
   if (!sizeEquals(srcEntry, dstEntry)) return false
   if (!metadataEquals(srcEntry, dstEntry)) return false
@@ -131,8 +132,8 @@ function linkEquals (srcEntry, dstEntry) {
   const srcLink = srcEntry.value.linkname
   const dstLink = dstEntry.value.linkname
 
-  if (!srcLink && !dstLink) return true
-  if (!srcLink || !dstLink) return false
+  if (!srcLink && !dstLink) return null
+  if (!srcLink || !dstLink) return 'change'
 
-  return srcLink === dstLink
+  return srcLink === dstLink ? 'equal' : 'change'
 }
