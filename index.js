@@ -67,7 +67,7 @@ module.exports = class MirrorDrive {
         await this.dst.symlink(key, srcEntry.value.linkname)
       } else {
         await pipeline(
-          this.src.createReadStream(key),
+          this.src.createReadStream(srcEntry),
           this.dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
