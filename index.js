@@ -98,24 +98,16 @@ function pipeline (rs, ws) {
 async function same (m, srcEntry, dstEntry) {
   if (!dstEntry) return false
 
+  if (srcEntry.value.linkname || dstEntry.value.linkname) {
+    return srcEntry.value.linkname === dstEntry.value.linkname
+  }
+
   if (srcEntry.value.executable !== dstEntry.value.executable) return false
 
-  const linkEqual = linkEquals(srcEntry, dstEntry)
-  if (linkEqual) return linkEqual === 'equal'
-
   if (!sizeEquals(srcEntry, dstEntry)) return false
+
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
-}
-
-function linkEquals (srcEntry, dstEntry) {
-  const srcLink = srcEntry.value.linkname
-  const dstLink = dstEntry.value.linkname
-
-  if (!srcLink && !dstLink) return null
-  if (!srcLink || !dstLink) return 'change'
-
-  return srcLink === dstLink ? 'equal' : 'change'
 }
 
 function sizeEquals (srcEntry, dstEntry) {
