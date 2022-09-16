@@ -108,18 +108,14 @@ async function same (m, srcEntry, dstEntry) {
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
-function metadataEquals (m, srcEntry, dstEntry) {
-  const srcMetadata = srcEntry.value.metadata
-  const dstMetadata = dstEntry.value.metadata
+function linkEquals (srcEntry, dstEntry) {
+  const srcLink = srcEntry.value.linkname
+  const dstLink = dstEntry.value.linkname
 
-  if (m.metadataEquals) {
-    return m.metadataEquals(srcMetadata, dstMetadata)
-  }
+  if (!srcLink && !dstLink) return null
+  if (!srcLink || !dstLink) return 'change'
 
-  const noMetadata = !srcMetadata && !dstMetadata
-  const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
-
-  return noMetadata || identicalMetadata
+  return srcLink === dstLink ? 'equal' : 'change'
 }
 
 function sizeEquals (srcEntry, dstEntry) {
@@ -132,12 +128,16 @@ function sizeEquals (srcEntry, dstEntry) {
   return srcBlob.byteLength === dstBlob.byteLength
 }
 
-function linkEquals (srcEntry, dstEntry) {
-  const srcLink = srcEntry.value.linkname
-  const dstLink = dstEntry.value.linkname
+function metadataEquals (m, srcEntry, dstEntry) {
+  const srcMetadata = srcEntry.value.metadata
+  const dstMetadata = dstEntry.value.metadata
 
-  if (!srcLink && !dstLink) return null
-  if (!srcLink || !dstLink) return 'change'
+  if (m.metadataEquals) {
+    return m.metadataEquals(srcMetadata, dstMetadata)
+  }
 
-  return srcLink === dstLink ? 'equal' : 'change'
+  const noMetadata = !srcMetadata && !dstMetadata
+  const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
+
+  return noMetadata || identicalMetadata
 }
