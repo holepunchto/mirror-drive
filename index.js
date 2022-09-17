@@ -107,6 +107,7 @@ async function same (m, srcEntry, dstEntry) {
   if (!sizeEquals(srcEntry, dstEntry)) return false
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
+
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
@@ -121,6 +122,8 @@ function sizeEquals (srcEntry, dstEntry) {
 }
 
 function metadataEquals (m, srcEntry, dstEntry) {
+  if (!m.src.supportsMetadata || !m.dst.supportsMetadata) return true
+
   const srcMetadata = srcEntry.value.metadata
   const dstMetadata = dstEntry.value.metadata
 
