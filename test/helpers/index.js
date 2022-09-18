@@ -18,7 +18,7 @@ module.exports = {
 }
 
 async function createDrives (t, opts, { setup = true } = {}) {
-  const local = new Localdrive(createTmpDir(t), { supportsMetadata: true, metadata: createMetadata(), ...opts })
+  const local = new Localdrive(createTmpDir(t), { metadata: createMetadata(), ...opts })
   const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
 
   t.teardown(() => local.close())
