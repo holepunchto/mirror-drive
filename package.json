@@ -25,7 +25,7 @@
     "brittle": "^3.1.0",
     "corestore": "^6.0.6",
     "hyperdrive": "next",
-    "localdrive": "^1.2.0",
+    "localdrive": "^1.2.1",
     "standard": "^17.0.0"
   },
   "dependencies": {
