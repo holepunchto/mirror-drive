@@ -18,7 +18,7 @@ module.exports = {
 }
 
 async function createDrives (t, opts, { setup = true } = {}) {
-  const local = new Localdrive(createTmpDir(t), { metadata: createMetadata(), ...opts })
+  const local = new Localdrive(createTmpDir(t), { metadata: new Map(), ...opts })
   const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
 
   t.teardown(() => local.close())
@@ -75,15 +75,6 @@ async function toArray (iterator) {
     array.push(value)
   }
   return array
-}
-
-function createMetadata () {
-  const kv = new Map()
-  return {
-    get: (key) => kv.has(key) ? kv.get(key) : null,
-    put: (key, value) => kv.set(key, value),
-    del: (key) => kv.delete(key)
-  }
 }
 
 function createTmpDir (t) {
