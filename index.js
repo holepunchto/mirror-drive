@@ -34,6 +34,8 @@ module.exports = class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
+    const batch = this.dst.batch ? this.dst.batch() : this.dst
+
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
         if (srcEntry) continue
@@ -42,7 +44,7 @@ module.exports = class MirrorDrive {
         this.bytesRemoved += blobLength(dstEntry)
         yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
 
-        if (!this.dryRun) await this.dst.del(key)
+        if (!this.dryRun) await batch.del(key)
       }
     }
 
@@ -70,14 +72,16 @@ module.exports = class MirrorDrive {
       }
 
       if (srcEntry.value.linkname) {
-        await this.dst.symlink(key, srcEntry.value.linkname)
+        await batch.symlink(key, srcEntry.value.linkname)
       } else {
         await pipeline(
           this.src.createReadStream(srcEntry),
-          this.dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+          batch.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
     }
+
+    if (batch.flush) await batch.flush()
   }
 }
 
