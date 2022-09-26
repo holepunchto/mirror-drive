@@ -13,7 +13,9 @@ module.exports = class MirrorDrive {
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
 
-    this.count = { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 }
+    this.count = { files: 0, add: 0, remove: 0, change: 0 }
+    this.bytesRemoved = 0
+    this.bytesAdded = 0
     this.iterator = this._mirror()
   }
 
@@ -37,7 +39,7 @@ module.exports = class MirrorDrive {
         if (srcEntry) continue
 
         this.count.remove++
-        this.count.bytesRemoved += blobLength(dstEntry)
+        this.bytesRemoved += blobLength(dstEntry)
         yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
 
         if (!this.dryRun) await this.dst.del(key)
@@ -54,12 +56,12 @@ module.exports = class MirrorDrive {
 
       if (dstEntry) {
         this.count.change++
-        this.count.bytesRemoved += blobLength(dstEntry)
-        this.count.bytesAdded += blobLength(srcEntry)
+        this.bytesRemoved += blobLength(dstEntry)
+        this.bytesAdded += blobLength(srcEntry)
         yield { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
       } else {
         this.count.add++
-        this.count.bytesAdded += blobLength(srcEntry)
+        this.bytesAdded += blobLength(srcEntry)
         yield { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
       }
 
