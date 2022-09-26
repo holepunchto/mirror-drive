@@ -10,9 +10,9 @@ test('remove', async function (t) {
 
   const m = new MirrorDrive(local, hyper)
 
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
   const diffs = await toArray(m)
-  t.alike(m.count, { files: 5, add: 0, remove: 1, change: 0 })
+  t.alike(m.count, { files: 5, add: 0, remove: 1, change: 0, bytesRemoved: 4, bytesAdded: 0 })
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
@@ -28,9 +28,9 @@ test('add', async function (t) {
 
   const m = new MirrorDrive(local, hyper)
 
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
   const diffs = await toArray(m)
-  t.alike(m.count, { files: 7, add: 1, remove: 0, change: 0 })
+  t.alike(m.count, { files: 7, add: 1, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 4 })
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'add', key: '/new-tmp.txt', bytesRemoved: 0, bytesAdded: 4 })
@@ -46,9 +46,9 @@ test('change content', async function (t) {
 
   const m = new MirrorDrive(local, hyper)
 
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
   const diffs = await toArray(m)
-  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1 })
+  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1, bytesRemoved: 4, bytesAdded: 4 })
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 })
@@ -64,9 +64,9 @@ test('change size', async function (t) {
 
   const m = new MirrorDrive(local, hyper)
 
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
   const diffs = await toArray(m)
-  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1 })
+  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1, bytesRemoved: 4, bytesAdded: 7 })
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 7 })
@@ -82,9 +82,9 @@ test('change metadata', async function (t) {
 
   const m = new MirrorDrive(local, hyper)
 
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
   const diffs = await toArray(m)
-  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1 })
+  t.alike(m.count, { files: 6, add: 0, remove: 0, change: 1, bytesRemoved: 4, bytesAdded: 4 })
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 })

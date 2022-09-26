@@ -9,14 +9,14 @@ test('mirror localdrive into hyperdrive', async function (t) {
   const expected = await changeDrive(local)
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true })
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
 
   for await (const diff of m) {
     delete diff.count
     actual.push(diff)
   }
 
-  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3, bytesRemoved: 16, bytesAdded: 15 })
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)
@@ -31,14 +31,14 @@ test('mirror hyperdrive into localdrive', async function (t) {
   const expected = await changeDrive(hyper)
 
   const m = new MirrorDrive(hyper, local, { includeEquals: true })
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
 
   for await (const diff of m) {
     delete diff.count
     actual.push(diff)
   }
 
-  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3, bytesRemoved: 16, bytesAdded: 15 })
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(hyper, local)
@@ -53,14 +53,14 @@ test('prune disabled', async function (t) {
   const expected = (await changeDrive(local)).filter(exp => exp.op !== 'remove')
 
   const m = new MirrorDrive(local, hyper, { prune: false, includeEquals: true })
-  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 })
 
   for await (const diff of m) {
     delete diff.count
     actual.push(diff)
   }
 
-  t.alike(m.count, { files: 6, add: 1, remove: 0, change: 3 })
+  t.alike(m.count, { files: 6, add: 1, remove: 0, change: 3, bytesRemoved: 12, bytesAdded: 15 })
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)
