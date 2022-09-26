@@ -13,7 +13,7 @@ module.exports = class MirrorDrive {
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
 
-    this.count = { files: 0, add: 0, remove: 0, change: 0, bytesAdded: 0, bytesRemoved: 0 }
+    this.count = { files: 0, add: 0, remove: 0, change: 0, bytesRemoved: 0, bytesAdded: 0 }
     this.iterator = this._mirror()
   }
 
