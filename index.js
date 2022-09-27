@@ -34,7 +34,7 @@ module.exports = class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
-    const batch = this.dst.batch ? this.dst.batch() : this.dst
+    const batch = this.dst.batch()
 
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
