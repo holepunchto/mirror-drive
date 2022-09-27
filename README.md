@@ -52,6 +52,7 @@ Available `options`:
   includeEquals: false,
   filter: (key) => true,
   metadataEquals: (srcMetadata, dstMetadata) => { ... }
+  batch: false
 }
 ```
 
