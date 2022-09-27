@@ -10,6 +10,8 @@ test('mirror localdrive into hyperdrive', async function (t) {
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
 
   for await (const diff of m) {
     delete diff.count
@@ -17,6 +19,8 @@ test('mirror localdrive into hyperdrive', async function (t) {
   }
 
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+  t.is(m.bytesRemoved, 16)
+  t.is(m.bytesAdded, 15)
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)
@@ -32,6 +36,8 @@ test('mirror hyperdrive into localdrive', async function (t) {
 
   const m = new MirrorDrive(hyper, local, { includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
 
   for await (const diff of m) {
     delete diff.count
@@ -39,6 +45,8 @@ test('mirror hyperdrive into localdrive', async function (t) {
   }
 
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+  t.is(m.bytesRemoved, 16)
+  t.is(m.bytesAdded, 15)
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(hyper, local)
@@ -54,6 +62,8 @@ test('prune disabled', async function (t) {
 
   const m = new MirrorDrive(local, hyper, { prune: false, includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
 
   for await (const diff of m) {
     delete diff.count
@@ -61,6 +71,8 @@ test('prune disabled', async function (t) {
   }
 
   t.alike(m.count, { files: 6, add: 1, remove: 0, change: 3 })
+  t.is(m.bytesRemoved, 12)
+  t.is(m.bytesAdded, 15)
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)

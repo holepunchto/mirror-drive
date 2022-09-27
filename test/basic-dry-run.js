@@ -12,6 +12,8 @@ test('dry run - mirror localdrive into hyperdrive', async function (t) {
 
     const m = new MirrorDrive(local, hyper, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+    t.is(m.bytesRemoved, 0)
+    t.is(m.bytesAdded, 0)
 
     for await (const diff of m) {
       delete diff.count
@@ -19,6 +21,8 @@ test('dry run - mirror localdrive into hyperdrive', async function (t) {
     }
 
     t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+    t.is(m.bytesRemoved, 16)
+    t.is(m.bytesAdded, 15)
     t.alike(sortObjects(actual), sortObjects(expected))
   }
 })
@@ -33,6 +37,8 @@ test('dry run - mirror hyperdrive into localdrive', async function (t) {
 
     const m = new MirrorDrive(hyper, local, { dryRun: true, includeEquals: true })
     t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+    t.is(m.bytesRemoved, 0)
+    t.is(m.bytesAdded, 0)
 
     for await (const diff of m) {
       delete diff.count
@@ -40,6 +46,8 @@ test('dry run - mirror hyperdrive into localdrive', async function (t) {
     }
 
     t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+    t.is(m.bytesRemoved, 16)
+    t.is(m.bytesAdded, 15)
     t.alike(sortObjects(actual), sortObjects(expected))
   }
 })

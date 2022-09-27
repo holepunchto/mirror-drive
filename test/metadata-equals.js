@@ -3,7 +3,7 @@ const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
 
 test('options metadataEquals - equal', async function (t) {
-  t.plan(5)
+  t.plan(9)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
@@ -13,8 +13,12 @@ test('options metadataEquals - equal', async function (t) {
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 1, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 0)
 
@@ -26,7 +30,7 @@ test('options metadataEquals - equal', async function (t) {
 })
 
 test('options metadataEquals - change', async function (t) {
-  t.plan(6)
+  t.plan(10)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
@@ -36,8 +40,12 @@ test('options metadataEquals - change', async function (t) {
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 1, add: 0, remove: 0, change: 1 })
+  t.is(m.bytesRemoved, 4)
+  t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
@@ -50,7 +58,7 @@ test('options metadataEquals - change', async function (t) {
 })
 
 test('options metadataEquals - remove metadata', async function (t) {
-  t.plan(6)
+  t.plan(10)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
@@ -60,8 +68,12 @@ test('options metadataEquals - remove metadata', async function (t) {
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 1, add: 0, remove: 0, change: 1 })
+  t.is(m.bytesRemoved, 4)
+  t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
@@ -74,7 +86,7 @@ test('options metadataEquals - remove metadata', async function (t) {
 })
 
 test('options metadataEquals - new metadata', async function (t) {
-  t.plan(6)
+  t.plan(10)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
@@ -84,8 +96,12 @@ test('options metadataEquals - new metadata', async function (t) {
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 1, add: 0, remove: 0, change: 1 })
+  t.is(m.bytesRemoved, 4)
+  t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
@@ -98,7 +114,7 @@ test('options metadataEquals - new metadata', async function (t) {
 })
 
 test('options metadataEquals - new entry', async function (t) {
-  t.plan(5)
+  t.plan(9)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
@@ -108,8 +124,12 @@ test('options metadataEquals - new entry', async function (t) {
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 1, add: 1, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'add', key: '/tmp.txt', bytesRemoved: 0, bytesAdded: 4 })
