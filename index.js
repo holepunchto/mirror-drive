@@ -1,4 +1,4 @@
-const deepEqual = require('deep-equal')
+const sameData = require('same-data')
 const streamEquals = require('binary-stream-equals')
 
 module.exports = class MirrorDrive {
@@ -138,7 +138,7 @@ function metadataEquals (m, srcEntry, dstEntry) {
   }
 
   const noMetadata = !srcMetadata && !dstMetadata
-  const identicalMetadata = !!(srcMetadata && dstMetadata && deepEqual(srcMetadata, dstMetadata))
+  const identicalMetadata = !!(srcMetadata && dstMetadata && sameData(srcMetadata, dstMetadata))
 
   return noMetadata || identicalMetadata
 }

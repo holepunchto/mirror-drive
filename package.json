@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "binary-stream-equals": "^1.0.0",
-    "deep-equal": "^2.0.5"
+    "same-data": "^1.0.0"
   }
 }
