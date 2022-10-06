@@ -7,6 +7,7 @@ test('opts.batch false (default)', async function (t) {
 
   await local.put('/buffer.txt', Buffer.from('edit'))
   await local.put('/tmp.txt', Buffer.from('edit'))
+  await local.del('/meta.txt')
 
   t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
   t.alike(await hyper.get('/tmp.txt'), Buffer.from('same'))
@@ -15,7 +16,7 @@ test('opts.batch false (default)', async function (t) {
   let i = 0
 
   for await (const diff of m) {
-    if (i++ !== 1) continue
+    if (i++ !== 2) continue
     t.is(diff.op, 'change')
 
     const a = (await hyper.get('/buffer.txt')).toString() === 'edit'
@@ -32,6 +33,7 @@ test('opts.batch basic', async function (t) {
 
   await local.put('/buffer.txt', Buffer.from('edit'))
   await local.put('/tmp.txt', Buffer.from('edit'))
+  await local.del('/meta.txt')
 
   t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
   t.alike(await hyper.get('/tmp.txt'), Buffer.from('same'))
@@ -40,7 +42,7 @@ test('opts.batch basic', async function (t) {
   let i = 0
 
   for await (const diff of m) {
-    if (i++ !== 1) continue
+    if (i++ !== 2) continue
     t.is(diff.op, 'change')
 
     t.alike(await hyper.get('/buffer.txt'), Buffer.from('same'))
