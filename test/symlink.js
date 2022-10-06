@@ -1,6 +1,7 @@
 const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const b4a = require('b4a')
 
 test('symlink basic', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
@@ -28,7 +29,7 @@ test('symlink not exists but entry does', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
   await local.symlink('/tmp.shortcut', '/tmp.txt')
-  await hyper.put('/tmp.shortcut', Buffer.from('same'))
+  await hyper.put('/tmp.shortcut', b4a.from('same'))
 
   const m = new MirrorDrive(local, hyper)
 

@@ -5,6 +5,7 @@ const fsp = require('fs/promises')
 const Localdrive = require('localdrive')
 const Hyperdrive = require('hyperdrive')
 const Corestore = require('corestore')
+const b4a = require('b4a')
 
 const isWin = os.platform() === 'win32'
 
@@ -33,21 +34,21 @@ async function createDrives (t, opts, { setup = true } = {}) {
 }
 
 async function setupDrive (drive) {
-  await drive.put('/equal.txt', Buffer.from('same'))
-  await drive.put('/equal-meta.txt', Buffer.from('same'), { metadata: 'same' })
+  await drive.put('/equal.txt', b4a.from('same'))
+  await drive.put('/equal-meta.txt', b4a.from('same'), { metadata: 'same' })
 
-  await drive.put('/buffer.txt', Buffer.from('same'))
-  await drive.put('/meta.txt', Buffer.from('same'), { metadata: 'same' })
+  await drive.put('/buffer.txt', b4a.from('same'))
+  await drive.put('/meta.txt', b4a.from('same'), { metadata: 'same' })
 
-  await drive.put('/add-meta.txt', Buffer.from('same'))
-  await drive.put('/tmp.txt', Buffer.from('same'))
+  await drive.put('/add-meta.txt', b4a.from('same'))
+  await drive.put('/tmp.txt', b4a.from('same'))
 }
 
 async function changeDrive (drive) {
-  await drive.put('/new.txt', Buffer.from('add'))
-  await drive.put('/buffer.txt', Buffer.from('edit'))
-  await drive.put('/meta.txt', Buffer.from('same'), { metadata: 'edit' })
-  await drive.put('/add-meta.txt', Buffer.from('same'), { metadata: 'add' })
+  await drive.put('/new.txt', b4a.from('add'))
+  await drive.put('/buffer.txt', b4a.from('edit'))
+  await drive.put('/meta.txt', b4a.from('same'), { metadata: 'edit' })
+  await drive.put('/add-meta.txt', b4a.from('same'), { metadata: 'add' })
   await drive.del('/tmp.txt')
 
   return [

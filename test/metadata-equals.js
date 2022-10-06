@@ -1,14 +1,15 @@
 const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const b4a = require('b4a')
 
 test('options metadataEquals - equal', async function (t) {
   t.plan(9)
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
-  await local.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
-  await hyper.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
+  await local.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
+  await hyper.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
 
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
@@ -34,8 +35,8 @@ test('options metadataEquals - change', async function (t) {
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
-  await local.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
-  await hyper.put('/tmp.txt', Buffer.from('same'), { metadata: 'edit' })
+  await local.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
+  await hyper.put('/tmp.txt', b4a.from('same'), { metadata: 'edit' })
 
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
@@ -62,8 +63,8 @@ test('options metadataEquals - remove metadata', async function (t) {
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
-  await local.put('/tmp.txt', Buffer.from('same'))
-  await hyper.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
+  await local.put('/tmp.txt', b4a.from('same'))
+  await hyper.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
 
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
@@ -90,8 +91,8 @@ test('options metadataEquals - new metadata', async function (t) {
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
-  await local.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
-  await hyper.put('/tmp.txt', Buffer.from('same'))
+  await local.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
+  await hyper.put('/tmp.txt', b4a.from('same'))
 
   const m = new MirrorDrive(local, hyper, { metadataEquals })
 
@@ -118,7 +119,7 @@ test('options metadataEquals - new entry', async function (t) {
 
   const { local, hyper } = await createDrives(t, undefined, { setup: false })
 
-  await local.put('/tmp.txt', Buffer.from('same'), { metadata: 'same' })
+  await local.put('/tmp.txt', b4a.from('same'), { metadata: 'same' })
   t.absent(await hyper.entry('/tmp.txt'))
 
   const m = new MirrorDrive(local, hyper, { metadataEquals })

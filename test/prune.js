@@ -1,11 +1,12 @@
 const test = require('brittle')
 const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const b4a = require('b4a')
 
 test('prune basic', async function (t) {
   const { local, hyper } = await createDrives(t)
 
-  await hyper.put('/new-tmp.txt', Buffer.from('same'))
+  await hyper.put('/new-tmp.txt', b4a.from('same'))
 
   const m = new MirrorDrive(local, hyper)
   const diffs = await toArray(m)
@@ -18,7 +19,7 @@ test('prune basic', async function (t) {
 test('prune dry run', async function (t) {
   const { local, hyper } = await createDrives(t)
 
-  await hyper.put('/new-tmp.txt', Buffer.from('same'))
+  await hyper.put('/new-tmp.txt', b4a.from('same'))
 
   const m = new MirrorDrive(local, hyper, { dryRun: true })
   const diffs = await toArray(m)
@@ -31,7 +32,7 @@ test('prune dry run', async function (t) {
 test('prune disabled basic', async function (t) {
   const { local, hyper } = await createDrives(t)
 
-  await hyper.put('/new-tmp.txt', Buffer.from('same'))
+  await hyper.put('/new-tmp.txt', b4a.from('same'))
 
   const m = new MirrorDrive(local, hyper, { prune: false })
   const diffs = await toArray(m)
