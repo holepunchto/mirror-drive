@@ -35,19 +35,19 @@ module.exports = class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
+    const dst = this.batch ? this.dst.batch() : this.dst
+
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of list(this.prefix, dst, this.src)) {
         if (srcEntry) continue
 
         this.count.remove++
         this.bytesRemoved += blobLength(dstEntry)
         yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
 
-        if (!this.dryRun) await this.dst.del(key)
+        if (!this.dryRun) await dst.del(key)
       }
     }
-
-    const dst = this.batch ? this.dst.batch() : this.dst
 
     for await (const [key, srcEntry, dstEntry] of list(this.prefix, this.src, dst, { filter: this.filter })) {
       this.count.files++
