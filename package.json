@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/holepunchto/mirror-drive",
   "devDependencies": {
+    "b4a": "^1.6.0",
     "brittle": "^3.1.0",
     "corestore": "^6.0.6",
     "hyperdrive": "next",

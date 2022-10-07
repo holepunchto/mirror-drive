@@ -1,11 +1,12 @@
 const test = require('brittle')
 const { createDrives, toArray, isWin } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const b4a = require('b4a')
 
 test('executable basic', { skip: isWin }, async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
-  await local.put('/script.sh', Buffer.from('# bash'), { executable: true })
+  await local.put('/script.sh', b4a.from('# bash'), { executable: true })
   t.absent(await hyper.entry('/script.sh'))
 
   const m = new MirrorDrive(local, hyper)
@@ -27,8 +28,8 @@ test('executable basic', { skip: isWin }, async function (t) {
 test('executable change', { skip: isWin }, async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
-  await local.put('/script.sh', Buffer.from('# bash'), { executable: false })
-  await hyper.put('/script.sh', Buffer.from('# bash'), { executable: true })
+  await local.put('/script.sh', b4a.from('# bash'), { executable: false })
+  await hyper.put('/script.sh', b4a.from('# bash'), { executable: true })
 
   const m = new MirrorDrive(local, hyper)
 
@@ -49,8 +50,8 @@ test('executable change', { skip: isWin }, async function (t) {
 test('executable same', { skip: isWin }, async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
 
-  await local.put('/script.sh', Buffer.from('# bash'), { executable: true })
-  await hyper.put('/script.sh', Buffer.from('# bash'), { executable: true })
+  await local.put('/script.sh', b4a.from('# bash'), { executable: true })
+  await hyper.put('/script.sh', b4a.from('# bash'), { executable: true })
 
   const m = new MirrorDrive(local, hyper)
 
