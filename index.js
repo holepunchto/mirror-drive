@@ -109,7 +109,7 @@ module.exports = class MirrorDrive {
         }
         ws.end()
 
-        await closed*/
+        await closed */
 
         await pipeline(
           this.src.createReadStream(srcEntry),
