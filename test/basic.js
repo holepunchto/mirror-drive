@@ -93,6 +93,6 @@ test('mirror into a readonly drive', async function (t) {
     await m.done()
     t.fail('should have failed to mirror')
   } catch (error) {
-    t.is(error.message, 'dst is not writable')
+    t.is(error.message, 'Destination must be writable')
   }
 })
