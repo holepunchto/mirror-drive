@@ -18,9 +18,9 @@ module.exports = {
   isWin
 }
 
-async function createDrives (t, opts, { setup = true } = {}) {
+async function createDrives (t, opts, { setup = true, key } = {}) {
   const local = new Localdrive(createTmpDir(t), { metadata: new Map(), ...opts })
-  const hyper = new Hyperdrive(new Corestore(createTmpDir(t)))
+  const hyper = new Hyperdrive(new Corestore(createTmpDir(t)), key)
 
   t.teardown(() => local.close())
   t.teardown(() => hyper.close())
