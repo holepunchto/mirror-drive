@@ -15,7 +15,8 @@ module.exports = {
   sortObjects,
   toArray,
   alike,
-  isWin
+  isWin,
+  createTmpDir
 }
 
 async function createDrives (t, opts, { setup = true } = {}) {

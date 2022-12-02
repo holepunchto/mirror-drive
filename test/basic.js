@@ -1,6 +1,9 @@
 const test = require('brittle')
-const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
+const { createDrives, changeDrive, sortObjects, toArray, createTmpDir } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const Localdrive = require('localdrive')
+const Hyperdrive = require('hyperdrive')
+const Corestore = require('corestore')
 
 test('mirror localdrive into hyperdrive', async function (t) {
   const { local, hyper } = await createDrives(t)
@@ -79,4 +82,24 @@ test('prune disabled', async function (t) {
   const diffs = await toArray(m2)
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
+})
+
+test.solo('hyperdrive with custom key', async function (t) { // + b4a
+  t.plan(1)
+
+  const key = Buffer.from('6ee2dfe60728087cc9ec0698a79ee0a148df2c96f516dd684461af92fcb798de', 'hex')
+
+  const local = new Localdrive(createTmpDir(t), { metadata: new Map() })
+  const store = new Corestore(createTmpDir(t))
+  const hyper = new Hyperdrive(store, key)
+
+  t.teardown(() => local.close())
+  t.teardown(() => hyper.close())
+
+  await local.put('/app.js', Buffer.from('console.log("hello")'))
+
+  const m = new MirrorDrive(local, hyper)
+  await m.done()
+
+  t.is(m.count.files, 1)
 })
