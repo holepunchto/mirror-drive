@@ -20,10 +20,12 @@ module.exports = {
 
 async function createDrives (t, opts, { setup = true, key } = {}) {
   const local = new Localdrive(createTmpDir(t), { metadata: new Map(), ...opts })
-  const hyper = new Hyperdrive(new Corestore(createTmpDir(t)), key)
+  const store = new Corestore(createTmpDir(t))
+  const hyper = new Hyperdrive(store, key)
 
   t.teardown(() => local.close())
   t.teardown(() => hyper.close())
+  t.teardown(() => store.close())
 
   if (setup) {
     await setupDrive(local)
