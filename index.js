@@ -35,6 +35,8 @@ module.exports = class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
+    if (this.dst.core && !this.dst.core.writable) throw new Error('Destination must be writable')
+
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {

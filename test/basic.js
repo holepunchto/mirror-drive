@@ -1,6 +1,7 @@
 const test = require('brittle')
 const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
+const b4a = require('b4a')
 
 test('mirror localdrive into hyperdrive', async function (t) {
   const { local, hyper } = await createDrives(t)
@@ -79,4 +80,19 @@ test('prune disabled', async function (t) {
   const diffs = await toArray(m2)
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
+})
+
+test('mirror into a readonly drive', async function (t) {
+  const { local, hyper } = await createDrives(t, null, { setup: false, key: b4a.alloc(32) })
+
+  await local.put('/tmp.txt', b4a.from('hello'))
+
+  const m = new MirrorDrive(local, hyper)
+
+  try {
+    await m.done()
+    t.fail('should have failed to mirror')
+  } catch (error) {
+    t.is(error.message, 'Destination must be writable')
+  }
 })
