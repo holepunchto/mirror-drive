@@ -94,6 +94,7 @@ function blobLength (entry) {
 
 async function * list (prefix, a, b, opts) {
   for await (const entryA of a.list(prefix, opts)) {
+    if (opts && opts.filter && !opts.filter(entryA.key)) continue
     const entryB = await b.entry(entryA.key)
     yield [entryA.key, entryA, entryB]
   }
