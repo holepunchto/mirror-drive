@@ -103,7 +103,7 @@ async function * list (prefix, a, b, opts) {
 function pipeline (rs, ws) {
   return new Promise((resolve, reject) => {
     rs.pipe(ws, (err) => {
-      if (err) reject(err)
+      if (err && err.code !== 'ENOENT') reject(err)
       else resolve()
     })
   })

@@ -96,3 +96,29 @@ test('mirror into a readonly drive', async function (t) {
     t.is(error.message, 'Destination must be writable')
   }
 })
+
+test('mirror a drive but file got quickly deleted', async function (t) {
+  const { local, hyper } = await createDrives(t)
+
+  const actual = []
+  const expected = await changeDrive(local)
+
+  const m = new MirrorDrive(local, hyper, { includeEquals: true })
+
+  let first = true
+
+  for await (const diff of m) {
+    if (first && diff.op === 'change') {
+      first = false
+      await local.del(diff.key)
+    }
+
+    delete diff.count
+    actual.push(diff)
+  }
+
+  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
+  t.is(m.bytesRemoved, 16)
+  t.is(m.bytesAdded, 15)
+  t.alike(sortObjects(actual), sortObjects(expected))
+})
