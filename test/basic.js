@@ -98,18 +98,24 @@ test('mirror into a readonly drive', async function (t) {
 })
 
 test('mirror a drive but file got quickly deleted', async function (t) {
-  const { local, hyper } = await createDrives(t)
+  const { local, hyper } = await createDrives(t, null, { setup: false })
+
+  await local.put('/LICENSE', b4a.from('MIT'))
+  await local.put('/extra-file', b4a.from('hi'))
+
+  await hyper.put('/LICENSE', b4a.from('MIT'))
 
   const actual = []
-  const expected = await changeDrive(local)
+  const expected = [
+    { op: 'equal', key: '/LICENSE', bytesRemoved: 0, bytesAdded: 0 },
+    { op: 'add', key: '/extra-file', bytesRemoved: 0, bytesAdded: 2 }
+  ]
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true })
 
-  let first = true
-
   for await (const diff of m) {
-    if (first && diff.op === 'change') {
-      first = false
+    if (diff.op === 'add' && diff.key === '/extra-file') {
+      t.comment('Quickly deleting entry (' + diff.key + ') just before mirror')
       await local.del(diff.key)
     }
 
@@ -117,8 +123,8 @@ test('mirror a drive but file got quickly deleted', async function (t) {
     actual.push(diff)
   }
 
-  t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
-  t.is(m.bytesRemoved, 16)
-  t.is(m.bytesAdded, 15)
+  t.alike(m.count, { files: 2, add: 1, remove: 0, change: 0 })
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 2)
   t.alike(sortObjects(actual), sortObjects(expected))
 })
