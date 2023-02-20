@@ -115,7 +115,6 @@ test('mirror a drive but file got quickly deleted', async function (t) {
 
   for await (const diff of m) {
     if (diff.op === 'add' && diff.key === '/extra-file') {
-      t.comment('Quickly deleting entry (' + diff.key + ') just before mirror')
       await local.del(diff.key)
     }
 
