@@ -122,6 +122,10 @@ test('mirror a drive but file got quickly deleted', async function (t) {
     actual.push(diff)
   }
 
+  const toKey = (entry) => entry.key
+  t.alike((await toArray(local.list())).map(toKey), ['/LICENSE'])
+  t.alike((await toArray(hyper.list())).map(toKey), ['/LICENSE'])
+
   t.alike(m.count, { files: 2, add: 1, remove: 0, change: 0 })
   t.is(m.bytesRemoved, 0)
   t.is(m.bytesAdded, 2)
