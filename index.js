@@ -13,6 +13,7 @@ module.exports = class MirrorDrive {
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
     this.batch = !!opts.batch
+    this.linear = opts.linear !== false
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.bytesRemoved = 0
@@ -54,7 +55,7 @@ module.exports = class MirrorDrive {
     for await (const [key, srcEntry, dstEntry] of list(this.prefix, this.src, dst, { filter: this.filter })) {
       this.count.files++
 
-      if (await same(this, srcEntry, dstEntry)) {
+      if (await same(this, srcEntry, dstEntry, { linear: this.linear })) {
         if (this.includeEquals) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         continue
       }
@@ -78,7 +79,7 @@ module.exports = class MirrorDrive {
         await dst.symlink(key, srcEntry.value.linkname)
       } else {
         await pipeline(
-          this.src.createReadStream(srcEntry),
+          this.src.createReadStream(srcEntry, { linear: this.linear }),
           dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
@@ -109,7 +110,7 @@ function pipeline (rs, ws) {
   })
 }
 
-async function same (m, srcEntry, dstEntry) {
+async function same (m, srcEntry, dstEntry, opts) {
   if (!dstEntry) return false
 
   if (srcEntry.value.linkname || dstEntry.value.linkname) {
@@ -122,7 +123,7 @@ async function same (m, srcEntry, dstEntry) {
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
-  return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
+  return streamEquals(m.src.createReadStream(srcEntry, opts), m.dst.createReadStream(dstEntry, opts))
 }
 
 function sizeEquals (srcEntry, dstEntry) {
