@@ -40,7 +40,7 @@ module.exports = class MirrorDrive {
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of list(this.prefix, dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
         if (srcEntry) continue
 
         this.count.remove++
