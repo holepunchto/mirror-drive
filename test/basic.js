@@ -108,7 +108,8 @@ test('mirror a drive but file got quickly deleted', async function (t) {
   const actual = []
   const expected = [
     { op: 'equal', key: '/LICENSE', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'add', key: '/extra-file', bytesRemoved: 0, bytesAdded: 2 }
+    { op: 'add', key: '/extra-file', bytesRemoved: 0, bytesAdded: 2 },
+    { op: 'remove', key: '/extra-file', bytesRemoved: 2, bytesAdded: 0 }
   ]
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true })
@@ -126,8 +127,8 @@ test('mirror a drive but file got quickly deleted', async function (t) {
   t.alike((await toArray(local.list())).map(toKey), ['/LICENSE'])
   t.alike((await toArray(hyper.list())).map(toKey), ['/LICENSE'])
 
-  t.alike(m.count, { files: 2, add: 1, remove: 0, change: 0 })
-  t.is(m.bytesRemoved, 0)
+  t.alike(m.count, { files: 2, add: 1, remove: 1, change: 0 })
+  t.is(m.bytesRemoved, 2)
   t.is(m.bytesAdded, 2)
   t.alike(sortObjects(actual), sortObjects(expected))
 })

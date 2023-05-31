@@ -77,10 +77,18 @@ module.exports = class MirrorDrive {
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else {
-        await pipeline(
-          this.src.createReadStream(srcEntry),
-          dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-        )
+        try {
+          await pipeline(
+            this.src.createReadStream(srcEntry),
+            dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+          )
+        } catch (err) {
+          if (err.code !== 'ENOENT') throw err
+
+          this.count.remove++
+          this.bytesRemoved += blobLength(srcEntry)
+          yield { op: 'remove', key, bytesRemoved: blobLength(srcEntry), bytesAdded: 0 }
+        }
       }
     }
 
@@ -103,7 +111,7 @@ async function * list (prefix, a, b, opts) {
 function pipeline (rs, ws) {
   return new Promise((resolve, reject) => {
     rs.pipe(ws, (err) => {
-      if (err && err.code !== 'ENOENT') reject(err)
+      if (err) reject(err)
       else resolve()
     })
   })
