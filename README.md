@@ -1,6 +1,6 @@
 # mirror-drive
 
-Mirror a hyperdrive or localdrive into another one.
+Mirror a Hyperdrive or Localdrive into another one
 
 ```
 npm i mirror-drive
@@ -68,4 +68,5 @@ Default value: `{ files: 0, add: 0, remove: 0, change: 0 }`
 It starts processing all the diffing until is done.
 
 ## License
+
 Apache-2.0
