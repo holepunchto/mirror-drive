@@ -96,3 +96,41 @@ test('mirror into a readonly drive', async function (t) {
     t.is(error.message, 'Destination must be writable')
   }
 })
+
+test('mirror with entries option', async function (t) {
+  const { local, hyper } = await createDrives(t)
+
+  const entries = ['/tmp.txt', '/buffer.txt', '/equal.txt', '/new.txt']
+  const actual = []
+  const expected = (await changeDrive(local)).filter(v => entries.indexOf(v.key) > -1)
+
+  const m = new MirrorDrive(local, hyper, { includeEquals: true, entries })
+
+  for await (const diff of m) {
+    delete diff.count
+    actual.push(diff)
+  }
+
+  t.alike(m.count, { files: 3, add: 1, remove: 1, change: 1 })
+  t.is(m.bytesRemoved, 8)
+  t.is(m.bytesAdded, 7)
+  t.alike(sortObjects(actual), sortObjects(expected))
+
+  const actual2 = []
+  const expected2 = [
+    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 }
+  ]
+
+  const m2 = new MirrorDrive(local, hyper)
+
+  for await (const diff of m2) {
+    delete diff.count
+    actual2.push(diff)
+  }
+
+  t.alike(m2.count, { files: 6, add: 0, remove: 0, change: 2 })
+  t.is(m2.bytesRemoved, 8)
+  t.is(m2.bytesAdded, 8)
+  t.alike(sortObjects(actual2), sortObjects(expected2))
+})

@@ -13,6 +13,7 @@ module.exports = class MirrorDrive {
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
     this.batch = !!opts.batch
+    this.entries = opts.entries || null
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.bytesRemoved = 0
@@ -40,7 +41,7 @@ module.exports = class MirrorDrive {
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of list(this.prefix, this.dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src)) {
         if (srcEntry) continue
 
         this.count.remove++
@@ -51,7 +52,9 @@ module.exports = class MirrorDrive {
       }
     }
 
-    for await (const [key, srcEntry, dstEntry] of list(this.prefix, this.src, dst, { filter: this.filter })) {
+    for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
+      if (!srcEntry) continue // Due entries option, src entry might not exist probably because it was pruned
+
       this.count.files++
 
       if (await same(this, srcEntry, dstEntry)) {
@@ -86,18 +89,25 @@ module.exports = class MirrorDrive {
 
     if (this.batch) await dst.flush()
   }
+
+  async * _list (a, b, opts) {
+    const list = this.entries || a.list(this.prefix)
+
+    for await (const entry of list) {
+      const key = typeof entry === 'object' ? entry.key : entry
+
+      if (opts && opts.filter && !opts.filter(key)) continue
+
+      const entryA = await a.entry(entry)
+      const entryB = await b.entry(key)
+
+      yield [key, entryA, entryB]
+    }
+  }
 }
 
 function blobLength (entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
-}
-
-async function * list (prefix, a, b, opts) {
-  for await (const entryA of a.list(prefix)) {
-    if (opts && opts.filter && !opts.filter(entryA.key)) continue
-    const entryB = await b.entry(entryA.key)
-    yield [entryA.key, entryA, entryB]
-  }
 }
 
 function pipeline (rs, ws) {
