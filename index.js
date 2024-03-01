@@ -33,6 +33,7 @@ module.exports = class MirrorDrive {
   }
 
   async * _mirror () {
+    function noop () {}
     await this.src.ready()
     await this.dst.ready()
 
@@ -50,6 +51,10 @@ module.exports = class MirrorDrive {
 
         if (!this.dryRun) await dst.del(key)
       }
+    }
+
+    if (this.src.constructor.name === 'Hyperdrive') {
+      this.src.download(this.prefix).catch(noop)
     }
 
     for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
