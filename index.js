@@ -33,7 +33,6 @@ module.exports = class MirrorDrive {
   }
 
   async * _mirror () {
-    function noop () {}
     await this.src.ready()
     await this.dst.ready()
 
@@ -165,3 +164,5 @@ function metadataEquals (m, srcEntry, dstEntry) {
 
   return noMetadata || identicalMetadata
 }
+
+function noop () {}
