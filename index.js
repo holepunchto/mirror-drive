@@ -52,7 +52,7 @@ module.exports = class MirrorDrive {
       }
     }
 
-    if (this.src.constructor.name === 'Hyperdrive') {
+    if (this.src.download && !this.entries) {
       this.src.download(this.prefix).catch(noop)
     }
 
