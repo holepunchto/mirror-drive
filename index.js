@@ -52,6 +52,10 @@ module.exports = class MirrorDrive {
       }
     }
 
+    if (this.src.download && !this.entries) {
+      this.src.download(this.prefix).catch(noop)
+    }
+
     for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
       if (!srcEntry) continue // Due entries option, src entry might not exist probably because it was pruned
 
@@ -160,3 +164,5 @@ function metadataEquals (m, srcEntry, dstEntry) {
 
   return noMetadata || identicalMetadata
 }
+
+function noop () {}
