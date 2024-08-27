@@ -134,3 +134,20 @@ test('mirror with entries option', async function (t) {
   t.is(m2.bytesAdded, 8)
   t.alike(sortObjects(actual2), sortObjects(expected2))
 })
+
+test('mirror localdrive into hyperdrive with ignores', async function (t) {
+  const { local } = await createDrives(t)
+  const { hyper } = await createDrives(t, null, { setup: false })
+
+  await local.put('/folder/file.txt', b4a.from('same'))
+  await local.put('/folder/subfolder/file.txt', b4a.from('same'))
+
+  const m = new MirrorDrive(local, hyper, { ignore: ['/equal.txt', 'tmp.txt', '/folder/subfolder'] })
+  await m.done()
+
+  t.is(await hyper.get('/equal.txt'), null)
+  t.is(await hyper.get('/tmp.txt'), null)
+  t.is(await hyper.get('/folder/subfolder/file.txt'), null)
+
+  t.not(await hyper.get('/folder/file.txt'), null)
+})

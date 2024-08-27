@@ -54,6 +54,7 @@ Available `options`:
   metadataEquals: (srcMetadata, dstMetadata) => { ... }
   batch: false,
   entries: null // Array of key entries (if you use this then prefix is ignored)
+  ignore: String || Array // Ignore source files and folders by name.
 }
 ```
 
