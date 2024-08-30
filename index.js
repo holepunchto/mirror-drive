@@ -19,7 +19,7 @@ module.exports = class MirrorDrive {
     this.bytesRemoved = 0
     this.bytesAdded = 0
     this.iterator = this._mirror()
-    this._ignore = opts.ignore
+    this._ignore = opts.ignore ? [].concat(opts.ignore) : null
   }
 
   [Symbol.asyncIterator] () {
