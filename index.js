@@ -20,6 +20,7 @@ module.exports = class MirrorDrive {
     this.bytesAdded = 0
     this.iterator = this._mirror()
     this._ignore = opts.ignore ? [].concat(opts.ignore) : null
+    this._unignore = opts.unignore ? [].concat(opts.unignore) : null
   }
 
   [Symbol.asyncIterator] () {
@@ -96,7 +97,7 @@ module.exports = class MirrorDrive {
   }
 
   async * _list (a, b, opts) {
-    const list = this.entries || a.list(this.prefix, { ignore: this._ignore })
+    const list = this.entries || a.list(this.prefix, { ignore: this._ignore, unignore: this._unignore })
 
     for await (const entry of list) {
       const key = typeof entry === 'object' ? entry.key : entry
