@@ -166,7 +166,7 @@ test('mirror localdrive into hyperdrive with unignores', async function (t) {
   t.is(await hyper.get('/equal.txt'), null)
   t.is(await hyper.get('/tmp.txt'), null)
   t.is(await hyper.get('/folder/subfolder/file.txt'), null)
-  
+
   t.not(await hyper.get('/folder/file.txt'), null)
   t.not(await hyper.get('/folder/subfolder/other-file.txt'), null)
 })
