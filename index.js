@@ -19,7 +19,7 @@ module.exports = class MirrorDrive {
     this.bytesRemoved = 0
     this.bytesAdded = 0
     this.iterator = this._mirror()
-    this._ignore = Array.isArray(opts.ignore) ? toIgnoreFunction(opts.ignore) : opts.ignore
+    this._ignore = opts.ignore && Array.isArray(opts.ignore) ? [].concat(opts.ignore) : opts.ignore || null
   }
 
   [Symbol.asyncIterator] () {
@@ -138,12 +138,6 @@ async function same (m, srcEntry, dstEntry) {
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
-}
-
-function toIgnoreFunction (arr) {
-  return function (key) {
-    return arr.includes(key)
-  }
 }
 
 function sizeEquals (srcEntry, dstEntry) {
