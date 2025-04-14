@@ -27,11 +27,11 @@
     "corestore": "^6.0.6",
     "hyperdrive": "^11.0.1",
     "localdrive": "^1.3.0",
-    "standard": "^17.0.0",
-    "unix-path-resolve": "^1.0.2"
+    "standard": "^17.0.0"
   },
   "dependencies": {
     "binary-stream-equals": "^1.0.0",
-    "same-data": "^1.0.0"
+    "same-data": "^1.0.0",
+    "unix-path-resolve": "^1.0.2"
   }
 }

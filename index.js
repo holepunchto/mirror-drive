@@ -1,4 +1,5 @@
 const sameData = require('same-data')
+const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
 
 module.exports = class MirrorDrive {
@@ -19,7 +20,7 @@ module.exports = class MirrorDrive {
     this.bytesRemoved = 0
     this.bytesAdded = 0
     this.iterator = this._mirror()
-    this._ignore = opts.ignore && Array.isArray(opts.ignore) ? [].concat(opts.ignore) : opts.ignore || null
+    this._ignore = Array.isArray(opts.ignore) ? toIgnoreFunction(opts.ignore) : opts.ignore
   }
 
   [Symbol.asyncIterator] () {
@@ -164,6 +165,13 @@ function metadataEquals (m, srcEntry, dstEntry) {
   const identicalMetadata = !!(srcMetadata && dstMetadata && sameData(srcMetadata, dstMetadata))
 
   return noMetadata || identicalMetadata
+}
+
+function toIgnoreFunction (ignore) {
+  if (typeof ignore === 'function') return ignore
+
+  const all = [].concat(ignore).map(e => unixPathResolve('/', e))
+  return key => all.some(path => path === key || key.startsWith(path + '/'))
 }
 
 function noop () {}
