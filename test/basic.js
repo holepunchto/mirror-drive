@@ -1,5 +1,6 @@
 const test = require('brittle')
 const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
+const unixPathResolve = require('unix-path-resolve')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
 
@@ -149,5 +150,39 @@ test('mirror localdrive into hyperdrive with ignores', async function (t) {
   t.is(await hyper.get('/tmp.txt'), null)
   t.is(await hyper.get('/folder/subfolder/file.txt'), null)
 
+  t.not(await hyper.get('/folder/file.txt'), null)
+})
+
+test('mirror localdrive into hyperdrive with ignore and unignore function', async function (t) {
+  const { local } = await createDrives(t)
+  const { hyper } = await createDrives(t, null, { setup: false })
+
+  await local.put('/folder/file.txt', b4a.from('same'))
+  await local.put('/folder/subfolder/file.txt', b4a.from('same'))
+  await local.put('/folder/subfolder/otherfile.txt', b4a.from('same'))
+  const ignores = ['/equal.txt', 'tmp.txt', '/folder/subfolder']
+  const unignores = ['/folder/subfolder/otherfile.txt']
+  function ignore (key) {
+    for (const u of unignores) {
+      const path = unixPathResolve('/', u)
+      if (path === key) return false
+      if (path.startsWith(key + '/')) return false
+    }
+    for (const i of ignores) {
+      const path = unixPathResolve('/', i)
+      if (path === key) return true
+      if (key.startsWith(path + '/')) return true
+    }
+    return false
+  }
+
+  const m = new MirrorDrive(local, hyper, { ignore })
+  await m.done()
+
+  t.is(await hyper.get('/equal.txt'), null)
+  t.is(await hyper.get('/tmp.txt'), null)
+  t.is(await hyper.get('/folder/subfolder/file.txt'), null)
+
+  t.not(await hyper.get('/folder/subfolder/otherfile.txt'), null)
   t.not(await hyper.get('/folder/file.txt'), null)
 })
