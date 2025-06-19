@@ -55,7 +55,8 @@ module.exports = class MirrorDrive {
     }
 
     if (this.src.download && !this.entries) {
-      this.src.download(this.prefix).catch(noop)
+      const dl = this.src.download(this.prefix)
+      if (dl.catch) dl.catch(noop)
     }
 
     for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
