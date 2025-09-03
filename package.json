@@ -25,6 +25,8 @@
     "b4a": "^1.6.0",
     "brittle": "^3.1.0",
     "corestore": "^6.0.6",
+    "duplex-through": "^1.0.2",
+    "framed-stream": "^1.0.1",
     "hyperdrive": "^12.2.0",
     "localdrive": "^2.2.0",
     "standard": "^17.0.0"
