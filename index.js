@@ -90,12 +90,12 @@ module.exports = class MirrorDrive {
       } else {
         const rs = this.src.createReadStream(srcEntry)
         const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-        let p = rs
+        const tfs = []
         for (const tf of this.transformers) {
           const s = tf(key)
-          if (s) p = p.pipe(s)
+          if (s) tfs.push(s)
         }
-        await pipeline(p, ws)
+        await pipeline(rs, ...tfs, ws)
       }
     }
 
@@ -122,12 +122,23 @@ function blobLength (entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
 }
 
-function pipeline (rs, ws) {
+function pipeline (rs, ...rest) {
   return new Promise((resolve, reject) => {
-    rs.pipe(ws, (err) => {
-      if (err) reject(err)
-      else resolve()
-    })
+    if (rest.length === 0) return resolve()
+
+    const ws = rest[rest.length - 1]
+    const tfs = rest.slice(0, -1)
+
+    let p = rs
+    try {
+      for (const t of tfs) p = p.pipe(t)
+      p.pipe(ws, (err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    } catch (err) {
+      reject(err)
+    }
   })
 }
 
