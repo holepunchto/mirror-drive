@@ -65,7 +65,14 @@ module.exports = class MirrorDrive {
 
       this.count.files++
 
-      if (await same(this, key, srcEntry, dstEntry)) {
+      // If transformers are provided, we need to always run them to see if things changed
+      if (this.transformers && this.transformers.length && !srcEntry.value.linkname) {
+        const diff = await handleTransformed(this, dst, key, srcEntry, dstEntry)
+        if (diff) yield diff
+        continue
+      }
+
+      if (await same(this, srcEntry, dstEntry)) {
         if (this.includeEquals) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         continue
       }
@@ -88,14 +95,10 @@ module.exports = class MirrorDrive {
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else {
-        const rs = this.src.createReadStream(srcEntry)
-        const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-        const tfs = []
-        for (const tf of this.transformers) {
-          const s = tf(key)
-          if (s) tfs.push(s)
-        }
-        await pipeline(rs, ...tfs, ws)
+        await pipeline(
+          this.src.createReadStream(srcEntry),
+          dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+        )
       }
     }
 
@@ -142,7 +145,7 @@ function pipeline (rs, ...rest) {
   })
 }
 
-async function same (m, key, srcEntry, dstEntry) {
+async function same (m, srcEntry, dstEntry) {
   if (!dstEntry) return false
 
   if (srcEntry.value.linkname || dstEntry.value.linkname) {
@@ -151,18 +154,9 @@ async function same (m, key, srcEntry, dstEntry) {
 
   if (srcEntry.value.executable !== dstEntry.value.executable) return false
 
-  if (!metadataEquals(m, srcEntry, dstEntry)) return false
-
-  if (m.transformers && m.transformers.length) {
-    let p = m.src.createReadStream(srcEntry)
-    for (const tf of m.transformers) {
-      const s = tf(key)
-      if (s) p = p.pipe(s)
-    }
-    return streamEquals(p, m.dst.createReadStream(dstEntry))
-  }
-
   if (!sizeEquals(srcEntry, dstEntry)) return false
+
+  if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
@@ -198,6 +192,59 @@ function toIgnoreFunction (ignore) {
 
   const all = [].concat(ignore).map(e => unixPathResolve('/', e))
   return key => all.some(path => path === key || key.startsWith(path + '/'))
+}
+
+async function handleTransformed (m, dst, key, srcEntry, dstEntry) {
+  const eq = await equalTransformed(m, key, srcEntry, dstEntry)
+  if (eq) {
+    if (m.includeEquals) return { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+    return null
+  }
+
+  let diff
+  if (dstEntry) {
+    m.count.change++
+    m.bytesRemoved += blobLength(dstEntry)
+    m.bytesAdded += blobLength(srcEntry)
+    diff = { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
+  } else {
+    m.count.add++
+    m.bytesAdded += blobLength(srcEntry)
+    diff = { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
+  }
+
+  if (!m.dryRun) {
+    const rs = m.src.createReadStream(srcEntry)
+    const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+    await pipeline(rs, ...transformersForKey(m, key), ws)
+  }
+
+  return diff
+}
+
+async function equalTransformed (m, key, srcEntry, dstEntry) {
+  if (!dstEntry) return false
+
+  if (srcEntry.value.linkname || dstEntry.value.linkname) {
+    return srcEntry.value.linkname === dstEntry.value.linkname
+  }
+
+  if (srcEntry.value.executable !== dstEntry.value.executable) return false
+
+  if (!metadataEquals(m, srcEntry, dstEntry)) return false
+
+  let p = m.src.createReadStream(srcEntry)
+  for (const s of transformersForKey(m, key)) p = p.pipe(s)
+  return streamEquals(p, m.dst.createReadStream(dstEntry))
+}
+
+function transformersForKey (m, key) {
+  const tfs = []
+  for (const tf of m.transformers) {
+    const s = tf(key)
+    if (s) tfs.push(s)
+  }
+  return tfs
 }
 
 function noop () {}
