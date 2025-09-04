@@ -182,8 +182,6 @@ function toIgnoreFunction (ignore) {
   return key => all.some(path => path === key || key.startsWith(path + '/'))
 }
 
-function noop () {}
-
 function applyTransforms (m, key, entry, rs) {
   if (!m.transforms || m.transforms.length === 0) return rs
   let p = rs
@@ -193,3 +191,5 @@ function applyTransforms (m, key, entry, rs) {
   }
   return p
 }
+
+function noop () {}
