@@ -20,9 +20,9 @@ test('transforms: uppercase .txt files and stay equal on second run', async func
   // Add extra file to ensure variety
   await src.put('/notes.txt', b4a.from('hello world'))
 
-  const transforms = [() => upperTransform()]
+  const transformers = [(key) => upperTransform()]
 
-  const m1 = new MirrorDrive(src, dst, { transforms })
+  const m1 = new MirrorDrive(src, dst, { transformers })
   await m1.done()
 
   const upperEqual = await dst.get('/equal.txt')
@@ -32,7 +32,7 @@ test('transforms: uppercase .txt files and stay equal on second run', async func
   t.alike(String(upperNotes), 'HELLO WORLD')
 
   // Second run should produce only equals
-  const m2 = new MirrorDrive(src, dst, { transforms: [() => upperTransform()], includeEquals: true })
+  const m2 = new MirrorDrive(src, dst, { transformers: [(key) => upperTransform()], includeEquals: true })
   const diffs = await toArray(m2)
 
   t.ok(diffs.length > 0, 'emitted some diffs')
@@ -60,9 +60,9 @@ test('transforms: errors propagate and abort mirror', async function (t) {
 
   await src.put('/notes.txt', b4a.from('hello'))
 
-  const transforms = [() => errorTransform()]
+  const transformers = [(key) => errorTransform()]
 
-  const m = new MirrorDrive(src, dst, { transforms })
+  const m = new MirrorDrive(src, dst, { transformers })
 
   try {
     await m.done()
@@ -70,4 +70,46 @@ test('transforms: errors propagate and abort mirror', async function (t) {
   } catch (err) {
     t.is(err.message, 'transform boom')
   }
+})
+
+test('transformers: passthrough (null) leaves bytes unchanged', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  const passthrough = (key) => null
+
+  const m1 = new MirrorDrive(src, dst, { transformers: [passthrough] })
+  await m1.done()
+
+  const m2 = new MirrorDrive(src, dst, { transformers: [passthrough], includeEquals: true })
+  const diffs = await toArray(m2)
+
+  t.ok(diffs.length > 0, 'emitted some diffs')
+  for (const d of diffs) t.is(d.op, 'equal')
+})
+
+test('transformers: length-changing transform equals on rerun', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  // Increase length by appending fruit to every chunk
+  function fruitSaladTransform () {
+    return new Transform({
+      transform (chunk, cb) {
+        this.push(b4a.concat([chunk, b4a.from('🍐')]))
+        cb(null)
+      }
+    })
+  }
+
+  const transformers = [(key) => fruitSaladTransform()]
+
+  const m1 = new MirrorDrive(src, dst, { transformers })
+  await m1.done()
+
+  const m2 = new MirrorDrive(src, dst, { transformers, includeEquals: true })
+  const diffs = await toArray(m2)
+
+  t.ok(diffs.length > 0, 'emitted some diffs')
+  for (const d of diffs) t.is(d.op, 'equal')
 })

@@ -15,7 +15,7 @@ module.exports = class MirrorDrive {
     this.metadataEquals = opts.metadataEquals || null
     this.batch = !!opts.batch
     this.entries = opts.entries || null
-    this.transforms = opts.transforms || []
+    this.transformers = opts.transformers || []
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.bytesRemoved = 0
@@ -90,7 +90,11 @@ module.exports = class MirrorDrive {
       } else {
         const rs = this.src.createReadStream(srcEntry)
         const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-        const p = applyTransforms(this, key, srcEntry, rs)
+        let p = rs
+        for (const tf of this.transformers) {
+          const s = tf(key)
+          if (s) p = p.pipe(s)
+        }
         await pipeline(p, ws)
       }
     }
@@ -138,9 +142,12 @@ async function same (m, key, srcEntry, dstEntry) {
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
-  // If transforms are provided, always run them; a transform should pass-through when not applicable
-  if (m.transforms && m.transforms.length) {
-    const p = applyTransforms(m, key, srcEntry, m.src.createReadStream(srcEntry))
+  if (m.transformers && m.transformers.length) {
+    let p = m.src.createReadStream(srcEntry)
+    for (const tf of m.transformers) {
+      const s = tf(key)
+      if (s) p = p.pipe(s)
+    }
     return streamEquals(p, m.dst.createReadStream(dstEntry))
   }
 
@@ -180,16 +187,6 @@ function toIgnoreFunction (ignore) {
 
   const all = [].concat(ignore).map(e => unixPathResolve('/', e))
   return key => all.some(path => path === key || key.startsWith(path + '/'))
-}
-
-function applyTransforms (m, key, entry, rs) {
-  if (!m.transforms || m.transforms.length === 0) return rs
-  let p = rs
-  for (const tf of m.transforms) {
-    const s = tf({ key, entry })
-    if (s) p = p.pipe(s)
-  }
-  return p
 }
 
 function noop () {}
