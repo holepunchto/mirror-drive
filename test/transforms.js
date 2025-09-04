@@ -1,13 +1,14 @@
 const test = require('brittle')
-const { Transform } = require('stream')
+const { Transform } = require('streamx')
 const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
 
 function upperTransform () {
   return new Transform({
-    transform (chunk, _enc, cb) {
-      cb(null, b4a.from(String(chunk).toUpperCase()))
+    transform (chunk, cb) {
+      this.push(b4a.from(String(chunk).toUpperCase()))
+      cb(null)
     }
   })
 }
@@ -41,11 +42,14 @@ test('transforms: uppercase .txt files and stay equal on second run', async func
 function errorTransform () {
   let done = false
   return new Transform({
-    transform (chunk, _enc, cb) {
+    transform (chunk, cb) {
       if (!done) {
         done = true
         cb(new Error('transform boom'))
-      } else cb(null, chunk)
+      } else {
+        this.push(chunk)
+        cb(null)
+      }
     }
   })
 }

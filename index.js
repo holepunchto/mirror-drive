@@ -120,25 +120,10 @@ function blobLength (entry) {
 
 function pipeline (rs, ws) {
   return new Promise((resolve, reject) => {
-    let done = false
-    const ondone = (err) => {
-      if (done) return
-      done = true
+    rs.pipe(ws, (err) => {
       if (err) reject(err)
       else resolve()
-    }
-
-    try {
-      rs.pipe(ws, ondone)
-    } catch (err) {
-      ondone(err)
-      return
-    }
-
-    // Support Node streams where the pipe callback is ignored
-    ws.once('error', ondone)
-    ws.once('finish', ondone)
-    ws.once('close', ondone)
+    })
   })
 }
 
@@ -203,7 +188,7 @@ function applyTransforms (m, key, entry, rs) {
   if (!m.transforms || m.transforms.length === 0) return rs
   let p = rs
   for (const tf of m.transforms) {
-    const s = typeof tf === 'function' ? tf({ key, entry }) : tf
+    const s = tf({ key, entry })
     if (s) p = p.pipe(s)
   }
   return p

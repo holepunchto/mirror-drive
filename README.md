@@ -55,7 +55,7 @@ Available `options`:
   batch: false,
   entries: null // Array of key entries (if you use this then prefix is ignored)
   ignore: String || Array // Ignore source files and folders by name.
-  transforms: [] // Array of streams or factories that pass-through when not applicable
+  transforms: [] // Array of factory functions ({ key, entry }) => stream
 }
 ```
 
@@ -71,12 +71,7 @@ It starts processing all the diffing until is done.
 
 ## Transforms
 
-Apply content transforms during mirroring. Each item in `transforms` is either:
-
-- a stream instance (long‑lived), or
-- a factory function `({ key, entry }) => stream` that returns a stream per file.
-
-MirrorDrive always pipes through all provided transforms. Each transform must act as a pass‑through for files it does not handle. Equality also runs through the transforms, so re‑runs emit `equal` when post‑transform bytes are unchanged.
+Apply content transforms during mirroring. Each item in `transforms` is a factory function `({ key, entry }) => stream` that returns a new stream for that file. MirrorDrive always pipes through all provided transforms. Each transform must pass‑through when it does not apply. Equality also runs through the transforms, so re‑runs emit `equal` when post‑transform bytes are unchanged.
 
 ## License
 
