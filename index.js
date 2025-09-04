@@ -90,8 +90,8 @@ module.exports = class MirrorDrive {
       } else {
         const rs = this.src.createReadStream(srcEntry)
         const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-        const tfs = createTransforms(this, key, srcEntry)
-        await pipeAll(rs, ws, tfs)
+        const p = applyTransforms(this, key, srcEntry, rs)
+        await pipeline(p, ws)
       }
     }
 
@@ -118,33 +118,28 @@ function blobLength (entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
 }
 
-function pipeAll (rs, ws, transforms = []) {
+function pipeline (rs, ws) {
   return new Promise((resolve, reject) => {
-    try {
-      const onError = (err) => { if (err) reject(err) }
-
-      let p = rs
-      if (p && p.on) p.on('error', onError)
-
-      for (const t of transforms) {
-        if (t && t.on) t.on('error', onError)
-        p = p.pipe(t)
-      }
-
-      const dest = p.pipe(ws)
-      const finalStream = dest || ws
-
-      if (finalStream && typeof finalStream.on === 'function') {
-        finalStream.once('error', onError)
-        // finish for Writable, close as a fallback
-        finalStream.once('finish', () => resolve())
-        finalStream.once('close', () => resolve())
-      } else {
-        reject(new Error('Final stream does not support events'))
-      }
-    } catch (err) {
-      reject(err)
+    let done = false
+    const ondone = (err) => {
+      if (done) return
+      done = true
+      try { rs.unpipe(ws) } catch {}
+      if (err) reject(err)
+      else resolve()
     }
+
+    try {
+      rs.pipe(ws, ondone)
+    } catch (err) {
+      ondone(err)
+      return
+    }
+
+    // Support Node streams where the pipe callback is ignored
+    ws.once('error', ondone)
+    ws.once('finish', ondone)
+    ws.once('close', ondone)
   })
 }
 
@@ -159,12 +154,9 @@ async function same (m, key, srcEntry, dstEntry) {
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
-  const transforms = createTransforms(m, key, srcEntry)
-
-  // If transforms apply, compare transformed source stream to destination
-  if (transforms.length) {
-    let p = m.src.createReadStream(srcEntry)
-    for (const t of transforms) p = p.pipe(t)
+  // If transforms are provided, always run them; a transform should pass-through when not applicable
+  if (m.transforms && m.transforms.length) {
+    const p = applyTransforms(m, key, srcEntry, m.src.createReadStream(srcEntry))
     return streamEquals(p, m.dst.createReadStream(dstEntry))
   }
 
@@ -206,38 +198,14 @@ function toIgnoreFunction (ignore) {
   return key => all.some(path => path === key || key.startsWith(path + '/'))
 }
 
-function createTransforms (m, key, srcEntry) {
-  if (!m.transforms || m.transforms.length === 0) return []
-
-  const ctx = { key, entry: srcEntry }
-  const streams = []
-
-  for (const spec of m.transforms) {
-    if (!spec) continue
-
-    // direct function transforms: (ctx) => stream
-    if (typeof spec === 'function') {
-      const s = spec(ctx)
-      if (s) streams.push(s)
-      continue
-    }
-
-    // object transforms, { test: // | undefined, transform: fn }
-    const test = spec.test
-    let matches = true
-    if (test instanceof RegExp) matches = test.test(key)
-    else if (typeof test === 'function') matches = !!test(key, srcEntry)
-
-    if (!matches) continue
-
-    const factory = spec.transform
-    if (typeof factory === 'function') {
-      const s = factory(ctx)
-      if (s) streams.push(s)
-    }
-  }
-
-  return streams
-}
-
 function noop () {}
+
+function applyTransforms (m, key, entry, rs) {
+  if (!m.transforms || m.transforms.length === 0) return rs
+  let p = rs
+  for (const tf of m.transforms) {
+    const s = typeof tf === 'function' ? tf({ key, entry }) : tf
+    if (s) p = p.pipe(s)
+  }
+  return p
+}

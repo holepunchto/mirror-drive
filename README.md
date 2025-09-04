@@ -55,7 +55,7 @@ Available `options`:
   batch: false,
   entries: null // Array of key entries (if you use this then prefix is ignored)
   ignore: String || Array // Ignore source files and folders by name.
-  transforms: [] // Array of { test, transform } to modify file contents
+  transforms: [] // Array of streams or factories that pass-through when not applicable
 }
 ```
 
@@ -71,51 +71,12 @@ It starts processing all the diffing until is done.
 
 ## Transforms
 
-Apply content transforms per file during mirroring. Each item in `transforms` is:
+Apply content transforms during mirroring. Each item in `transforms` is either:
 
-```js
-{ test: RegExp | (key, entry) => boolean, transform: ({ key, entry }) => stream }
-```
+- a stream instance (long‑lived), or
+- a factory function `({ key, entry }) => stream` that returns a stream per file.
 
-- `test`: RegExp or function to decide if the transform applies to the file `key`.
-- `transform`: Factory that returns a fresh Transform/Duplex stream for that file.
-- All matching transforms are applied in array order.
-- Equality check uses the transformed source stream vs destination, so re-runs emit `equal` when post-transform bytes are unchanged.
-
-Example using framed-stream to uppercase `.txt` contents:
-
-```js
-const { PassThrough, Transform } = require('stream')
-const FramedStream = require('framed-stream')
-
-function upperFramedTransform () {
-  const raw = new PassThrough()
-  const framed = new FramedStream(raw)
-
-  const t = new Transform({
-    transform (chunk, _enc, cb) {
-      framed.write(chunk)
-      cb(null)
-    },
-    final (cb) {
-      framed.end()
-      framed.once('close', () => cb(null))
-    }
-  })
-
-  framed.on('data', (msg) => {
-    t.push(Buffer.from(String(msg).toUpperCase()))
-  })
-
-  return t
-}
-
-const mirror = new MirrorDrive(src, dst, {
-  transforms: [
-    { test: /\.txt$/, transform: () => upperFramedTransform() }
-  ]
-})
-```
+MirrorDrive always pipes through all provided transforms. Each transform must act as a pass‑through for files it does not handle. Equality also runs through the transforms, so re‑runs emit `equal` when post‑transform bytes are unchanged.
 
 ## License
 
