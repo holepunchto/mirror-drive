@@ -124,7 +124,6 @@ function pipeline (rs, ws) {
     const ondone = (err) => {
       if (done) return
       done = true
-      try { rs.unpipe(ws) } catch {}
       if (err) reject(err)
       else resolve()
     }
