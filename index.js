@@ -195,12 +195,6 @@ function toIgnoreFunction (ignore) {
 }
 
 async function handleTransformed (m, dst, key, srcEntry, dstEntry) {
-  const eq = await equalTransformed(m, key, srcEntry, dstEntry)
-  if (eq) {
-    if (m.includeEquals) return { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
-    return null
-  }
-
   let diff
   if (dstEntry) {
     m.count.change++
@@ -220,22 +214,6 @@ async function handleTransformed (m, dst, key, srcEntry, dstEntry) {
   }
 
   return diff
-}
-
-async function equalTransformed (m, key, srcEntry, dstEntry) {
-  if (!dstEntry) return false
-
-  if (srcEntry.value.linkname || dstEntry.value.linkname) {
-    return srcEntry.value.linkname === dstEntry.value.linkname
-  }
-
-  if (srcEntry.value.executable !== dstEntry.value.executable) return false
-
-  if (!metadataEquals(m, srcEntry, dstEntry)) return false
-
-  let p = m.src.createReadStream(srcEntry)
-  for (const s of transformersForKey(m, key)) p = p.pipe(s)
-  return streamEquals(p, m.dst.createReadStream(dstEntry))
 }
 
 function transformersForKey (m, key) {

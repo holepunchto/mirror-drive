@@ -13,7 +13,7 @@ function upperTransform () {
   })
 }
 
-test('transforms: uppercase .txt files and stay equal on second run', async function (t) {
+test('transformers: uppercase .txt files, always writes on rerun', async function (t) {
   const { local: src } = await createDrives(t)
   const { local: dst } = await createDrives(t, { setup: false })
 
@@ -36,7 +36,7 @@ test('transforms: uppercase .txt files and stay equal on second run', async func
   const diffs = await toArray(m2)
 
   t.ok(diffs.length > 0, 'emitted some diffs')
-  for (const d of diffs) t.is(d.op, 'equal')
+  for (const d of diffs) t.is(d.op, 'change')
 })
 
 function errorTransform () {
@@ -72,7 +72,7 @@ test('transforms: errors propagate and abort mirror', async function (t) {
   }
 })
 
-test('transformers: passthrough (null) leaves bytes unchanged', async function (t) {
+test('transformers: passthrough (null) still writes on rerun', async function (t) {
   const { local: src } = await createDrives(t)
   const { local: dst } = await createDrives(t, { setup: false })
 
@@ -85,10 +85,10 @@ test('transformers: passthrough (null) leaves bytes unchanged', async function (
   const diffs = await toArray(m2)
 
   t.ok(diffs.length > 0, 'emitted some diffs')
-  for (const d of diffs) t.is(d.op, 'equal')
+  for (const d of diffs) t.is(d.op, 'change')
 })
 
-test('transformers: length-changing transform equals on rerun', async function (t) {
+test('transformers: length-changing transform writes on rerun', async function (t) {
   const { local: src } = await createDrives(t)
   const { local: dst } = await createDrives(t, { setup: false })
 
@@ -111,5 +111,5 @@ test('transformers: length-changing transform equals on rerun', async function (
   const diffs = await toArray(m2)
 
   t.ok(diffs.length > 0, 'emitted some diffs')
-  for (const d of diffs) t.is(d.op, 'equal')
+  for (const d of diffs) t.is(d.op, 'change')
 })
