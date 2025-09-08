@@ -113,3 +113,44 @@ test('transformers: length-changing transform writes on rerun', async function (
   t.ok(diffs.length > 0, 'emitted some diffs')
   for (const d of diffs) t.is(d.op, 'change')
 })
+
+test('dry run + transforms: emits adds but writes nothing', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, undefined, { setup: false })
+
+  const transformers = [(key) => upperTransform()]
+
+  const m = new MirrorDrive(src, dst, { dryRun: true, transformers, includeEquals: true })
+  const diffs = await toArray(m)
+
+  t.ok(diffs.length > 0, 'emitted some diffs')
+  for (const d of diffs) t.is(d.op, 'add')
+
+  t.absent(await dst.entry('/equal.txt'))
+})
+
+test('transforms + symlink: creates symlink and rerun yields change', async function (t) {
+  const { local: src } = await createDrives(t, undefined, { setup: false })
+  const { local: dst } = await createDrives(t, undefined, { setup: false })
+
+  await src.put('/target.txt', b4a.from('hello'))
+  await src.symlink('/link.shortcut', '/target.txt')
+
+  const transformers = [(key) => upperTransform()]
+
+  const m1 = new MirrorDrive(src, dst, { transformers })
+  await m1.done()
+
+  const linkEntry = await dst.entry('/link.shortcut')
+  t.ok(linkEntry, 'symlink exists on destination')
+  t.is(linkEntry.value.linkname, '/target.txt')
+
+  const m2 = new MirrorDrive(src, dst, { transformers, includeEquals: true })
+  const diffs = await toArray(m2)
+
+  const linkDiff = diffs.find(d => d.key === '/link.shortcut')
+  t.ok(linkDiff, 'emitted a diff for the symlink')
+  t.is(linkDiff.op, 'change')
+  t.is(linkDiff.bytesRemoved, 0)
+  t.is(linkDiff.bytesAdded, 0)
+})
