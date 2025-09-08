@@ -1,6 +1,7 @@
 const sameData = require('same-data')
 const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
+const { pipelinePromise } = require('streamx')
 
 module.exports = class MirrorDrive {
   constructor (src, dst, opts = {}) {
@@ -65,15 +66,13 @@ module.exports = class MirrorDrive {
 
       this.count.files++
 
-      // If transformers are provided, we need to always run them to see if things changed
-      if (this.transformers && this.transformers.length && !srcEntry.value.linkname) {
-        const diff = await handleTransformed(this, dst, key, srcEntry, dstEntry)
-        if (diff) yield diff
-        continue
-      }
+      const hasTransformers = this.transformers && this.transformers.length
 
-      if (await same(this, srcEntry, dstEntry)) {
-        if (this.includeEquals) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+      // If transformers are provided, we can't know if same before running them
+      if (!hasTransformers && (await same(this, srcEntry, dstEntry))) {
+        if (this.includeEquals) {
+          yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+        }
         continue
       }
 
@@ -92,11 +91,14 @@ module.exports = class MirrorDrive {
         continue
       }
 
+      const transformers = this.transformers.map((t) => t()).filter(Boolean)
+
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else {
-        await pipeline(
+        await pipelinePromise(
           this.src.createReadStream(srcEntry),
+          ...transformers,
           dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
@@ -123,26 +125,6 @@ module.exports = class MirrorDrive {
 
 function blobLength (entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
-}
-
-function pipeline (rs, ...rest) {
-  return new Promise((resolve, reject) => {
-    if (rest.length === 0) return resolve()
-
-    const ws = rest[rest.length - 1]
-    const tfs = rest.slice(0, -1)
-
-    let p = rs
-    try {
-      for (const t of tfs) p = p.pipe(t)
-      p.pipe(ws, (err) => {
-        if (err) reject(err)
-        else resolve()
-      })
-    } catch (err) {
-      reject(err)
-    }
-  })
 }
 
 async function same (m, srcEntry, dstEntry) {
@@ -192,37 +174,6 @@ function toIgnoreFunction (ignore) {
 
   const all = [].concat(ignore).map(e => unixPathResolve('/', e))
   return key => all.some(path => path === key || key.startsWith(path + '/'))
-}
-
-async function handleTransformed (m, dst, key, srcEntry, dstEntry) {
-  let diff
-  if (dstEntry) {
-    m.count.change++
-    m.bytesRemoved += blobLength(dstEntry)
-    m.bytesAdded += blobLength(srcEntry)
-    diff = { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
-  } else {
-    m.count.add++
-    m.bytesAdded += blobLength(srcEntry)
-    diff = { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
-  }
-
-  if (!m.dryRun) {
-    const rs = m.src.createReadStream(srcEntry)
-    const ws = dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
-    await pipeline(rs, ...transformersForKey(m, key), ws)
-  }
-
-  return diff
-}
-
-function transformersForKey (m, key) {
-  const tfs = []
-  for (const tf of m.transformers) {
-    const s = tf(key)
-    if (s) tfs.push(s)
-  }
-  return tfs
 }
 
 function noop () {}
