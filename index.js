@@ -66,10 +66,12 @@ module.exports = class MirrorDrive {
 
       this.count.files++
 
-      const hasTransformers = this.transformers && this.transformers.length
-
       // If transformers are provided, we can't know if same before running them
-      if (!hasTransformers && (await same(this, srcEntry, dstEntry))) {
+      const hasTransformers = this.transformers && this.transformers.length > 0
+
+      const isSame = hasTransformers === false && await same(this, srcEntry, dstEntry)
+
+      if (isSame) {
         if (this.includeEquals) {
           yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         }
@@ -91,7 +93,20 @@ module.exports = class MirrorDrive {
         continue
       }
 
-      const transformers = this.transformers.map((t) => t()).filter(Boolean)
+      const transformers = this.transformers.reduce((list, transformer) => {
+        if (typeof transformer !== 'function') throw new Error('Transformers must be functions that return a duplex stream')
+
+        const stream = transformer()
+
+        if (stream === null) {
+          return list
+        } else if (isDuplexStream(stream)) {
+          list.push(stream)
+          return list
+        } else {
+          throw new Error("Return of transformer doesn't appear to be a stream?")
+        }
+      }, [])
 
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
@@ -174,6 +189,21 @@ function toIgnoreFunction (ignore) {
 
   const all = [].concat(ignore).map(e => unixPathResolve('/', e))
   return key => all.some(path => path === key || key.startsWith(path + '/'))
+}
+
+function isDuplexStream (s) {
+  if (!s || (typeof s !== 'object' && typeof s !== 'function')) return false
+
+  // Must be pipe-able and writable, and expose a readable side
+  const hasPipe = typeof s.pipe === 'function'
+  const hasWrite = typeof s.write === 'function'
+  const hasReadableSide =
+    // streamx
+    typeof s.push === 'function' ||
+    // nodejs
+    typeof s.read === 'function' || typeof s._read === 'function'
+
+  return hasPipe && hasWrite && hasReadableSide
 }
 
 function noop () {}

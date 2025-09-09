@@ -1,5 +1,6 @@
 const test = require('brittle')
 const { Transform } = require('streamx')
+const { Transform: NodeTransform } = require('stream')
 const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
@@ -153,4 +154,56 @@ test('transforms + symlink: creates symlink and rerun yields change', async func
   t.is(linkDiff.op, 'change')
   t.is(linkDiff.bytesRemoved, 0)
   t.is(linkDiff.bytesAdded, 0)
+})
+
+test('transforms: invalid transformer type throws', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  // Invalid: non-function in transformers array
+  const transformers = [123]
+  const m = new MirrorDrive(src, dst, { transformers })
+
+  try {
+    await m.done()
+    t.fail('should have thrown for invalid transformer type')
+  } catch (err) {
+    t.is(err.message, 'Transformers must be functions that return streams')
+  }
+})
+
+test('transforms: transformer returns non-stream throws', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  const transformers = [() => ({ not: 'a stream' })]
+  const m = new MirrorDrive(src, dst, { transformers })
+
+  try {
+    await m.done()
+    t.fail('should have thrown for non-stream return value')
+  } catch (err) {
+    t.is(err.message, "Return of transformer doesn't appear to be a stream?")
+  }
+})
+
+test('transforms: node stream Transform works', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  function nodeUpperTransform () {
+    return new NodeTransform({
+      transform (chunk, _enc, cb) {
+        cb(null, b4a.from(String(chunk).toUpperCase()))
+      }
+    })
+  }
+
+  const transformers = [(key) => nodeUpperTransform()]
+
+  const m = new MirrorDrive(src, dst, { transformers })
+  await m.done()
+
+  const upperEqual = await dst.get('/equal.txt')
+  t.alike(String(upperEqual), 'SAME')
 })
