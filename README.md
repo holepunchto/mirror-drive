@@ -71,7 +71,7 @@ It starts processing all the diffing until is done.
 
 ## Transformers
 
-Apply content transformers during mirroring. Each item in `transformers` is a factory function `(key) => stream | null` that returns a new stream for that file. MirrorDrive always pipes through all provided transformers. If a `transformer` returns `null` it is safely skipped.
+Apply content transformers during mirroring. Each item in `transformers` is a factory function `(key) => stream | null` that returns a new stream (or `null`) for that file. MirrorDrive always pipes through all provided transformers. If a `transformer` returns `null` it is safely skipped.
 
 ## License
 
