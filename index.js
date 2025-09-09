@@ -100,8 +100,8 @@ module.exports = class MirrorDrive {
 
         const stream = transformer(key)
 
-        if (stream === null) continue;
-        if (!isStream(stream)) throw new Error("transformer must return stream")
+        if (stream === null) continue
+        if (!isStream(stream)) throw new Error('transformer must return stream')
 
         transformers.push(stream)
       }
