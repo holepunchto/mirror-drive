@@ -96,7 +96,7 @@ module.exports = class MirrorDrive {
       const transformers = []
 
       for (const transformer of this.transformers) {
-        if (typeof transformer !== 'function') throw new Error('Transformers must be functions that return a duplex stream')
+        if (typeof transformer !== 'function') throw new Error('transformer must be a function')
 
         const stream = transformer(key)
 
