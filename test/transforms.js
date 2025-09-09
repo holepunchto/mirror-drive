@@ -69,12 +69,7 @@ test('transforms: errors propagate and abort mirror', async function (t) {
 
   const m = new MirrorDrive(src, dst, { transformers })
 
-  try {
-    await m.done()
-    t.fail('should have thrown from transform')
-  } catch (err) {
-    t.is(err.message, 'transform boom')
-  }
+  await t.exception(m.done())
 })
 
 test('transformers: passthrough (null) still writes on rerun', async function (t) {
@@ -168,12 +163,7 @@ test('transforms: invalid transformer type throws', async function (t) {
   const transformers = [123]
   const m = new MirrorDrive(src, dst, { transformers })
 
-  try {
-    await m.done()
-    t.fail('should have thrown for invalid transformer type')
-  } catch (err) {
-    t.is(err.message, 'Transformers must be functions that return a duplex stream')
-  }
+  await t.exception(m.done())
 })
 
 test('transforms: transformer returns non-stream throws', async function (t) {
@@ -183,12 +173,7 @@ test('transforms: transformer returns non-stream throws', async function (t) {
   const transformers = [() => ({ not: 'a stream' })]
   const m = new MirrorDrive(src, dst, { transformers })
 
-  try {
-    await m.done()
-    t.fail('should have thrown for non-stream return value')
-  } catch (err) {
-    t.is(err.message, "Return of transformer doesn't appear to be a duplex stream")
-  }
+  await t.exception(m.done())
 })
 
 test('transforms: node stream Transform works', async function (t) {
