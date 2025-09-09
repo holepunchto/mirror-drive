@@ -96,7 +96,7 @@ module.exports = class MirrorDrive {
       const transformers = this.transformers.reduce((list, transformer) => {
         if (typeof transformer !== 'function') throw new Error('Transformers must be functions that return a duplex stream')
 
-        const stream = transformer()
+        const stream = transformer(key)
 
         if (stream === null) {
           return list
@@ -104,7 +104,7 @@ module.exports = class MirrorDrive {
           list.push(stream)
           return list
         } else {
-          throw new Error("Return of transformer doesn't appear to be a stream?")
+          throw new Error("Return of transformer doesn't appear to be a duplex stream")
         }
       }, [])
 

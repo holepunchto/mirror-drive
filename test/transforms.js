@@ -21,7 +21,8 @@ test('transformers: uppercase .txt files, always writes on rerun', async functio
   // Add extra file to ensure variety
   await src.put('/notes.txt', b4a.from('hello world'))
 
-  const transformers = [(key) => upperTransform()]
+  const seen = new Set()
+  const transformers = [(key) => { seen.add(key); return upperTransform() }]
 
   const m1 = new MirrorDrive(src, dst, { transformers })
   await m1.done()
@@ -31,6 +32,9 @@ test('transformers: uppercase .txt files, always writes on rerun', async functio
 
   const upperNotes = await dst.get('/notes.txt')
   t.alike(String(upperNotes), 'HELLO WORLD')
+
+  t.ok(seen.has('/equal.txt'), 'factory saw /equal.txt')
+  t.ok(seen.has('/notes.txt'), 'factory saw /notes.txt')
 
   // Second run should produce only equals
   const m2 = new MirrorDrive(src, dst, { transformers: [(key) => upperTransform()], includeEquals: true })
@@ -168,7 +172,7 @@ test('transforms: invalid transformer type throws', async function (t) {
     await m.done()
     t.fail('should have thrown for invalid transformer type')
   } catch (err) {
-    t.is(err.message, 'Transformers must be functions that return streams')
+    t.is(err.message, 'Transformers must be functions that return a duplex stream')
   }
 })
 
@@ -183,7 +187,7 @@ test('transforms: transformer returns non-stream throws', async function (t) {
     await m.done()
     t.fail('should have thrown for non-stream return value')
   } catch (err) {
-    t.is(err.message, "Return of transformer doesn't appear to be a stream?")
+    t.is(err.message, "Return of transformer doesn't appear to be a duplex stream")
   }
 })
 
