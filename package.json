@@ -32,6 +32,7 @@
   "dependencies": {
     "binary-stream-equals": "^1.0.0",
     "same-data": "^1.0.0",
+    "streamx": "^2.22.1",
     "unix-path-resolve": "^1.0.2"
   }
 }

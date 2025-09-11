@@ -55,6 +55,7 @@ Available `options`:
   batch: false,
   entries: null // Array of key entries (if you use this then prefix is ignored)
   ignore: String || Array // Ignore source files and folders by name.
+  transformers: [] // Array of factory functions (key) => stream
 }
 ```
 
@@ -67,6 +68,10 @@ Default value: `{ files: 0, add: 0, remove: 0, change: 0 }`
 #### `await mirror.done()`
 
 It starts processing all the diffing until is done.
+
+## Transformers
+
+Apply content transformers during mirroring. Each item in `transformers` is a factory function `(key) => stream | null` that returns a new stream (or `null`) for that file. MirrorDrive always pipes through all provided transformers. If a `transformer` returns `null` it is safely skipped.
 
 ## License
 

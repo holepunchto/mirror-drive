@@ -1,6 +1,7 @@
 const sameData = require('same-data')
 const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
+const { pipelinePromise, isStream } = require('streamx')
 
 module.exports = class MirrorDrive {
   constructor (src, dst, opts = {}) {
@@ -15,6 +16,7 @@ module.exports = class MirrorDrive {
     this.metadataEquals = opts.metadataEquals || null
     this.batch = !!opts.batch
     this.entries = opts.entries || null
+    this.transformers = opts.transformers || []
 
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.bytesRemoved = 0
@@ -64,8 +66,15 @@ module.exports = class MirrorDrive {
 
       this.count.files++
 
-      if (await same(this, srcEntry, dstEntry)) {
-        if (this.includeEquals) yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+      // If transformers are provided, we can't know if same before running them
+      const hasTransformers = this.transformers && this.transformers.length > 0
+
+      const isSame = hasTransformers === false && await same(this, srcEntry, dstEntry)
+
+      if (isSame) {
+        if (this.includeEquals) {
+          yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
+        }
         continue
       }
 
@@ -84,11 +93,25 @@ module.exports = class MirrorDrive {
         continue
       }
 
+      const transformers = []
+
+      for (const transformer of this.transformers) {
+        if (typeof transformer !== 'function') throw new Error('transformer must be a function')
+
+        const stream = transformer(key)
+
+        if (stream === null) continue
+        if (!isStream(stream)) throw new Error('transformer must return a stream')
+
+        transformers.push(stream)
+      }
+
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else {
-        await pipeline(
+        await pipelinePromise(
           this.src.createReadStream(srcEntry),
+          ...transformers,
           dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
         )
       }
@@ -115,15 +138,6 @@ module.exports = class MirrorDrive {
 
 function blobLength (entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
-}
-
-function pipeline (rs, ws) {
-  return new Promise((resolve, reject) => {
-    rs.pipe(ws, (err) => {
-      if (err) reject(err)
-      else resolve()
-    })
-  })
 }
 
 async function same (m, srcEntry, dstEntry) {
