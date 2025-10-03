@@ -8,8 +8,9 @@
     "lib/**.js"
   ],
   "scripts": {
-    "test": "standard && brittle test/*.js",
-    "lint": "standard"
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
+    "test": "npm run lint && brittle test/*.js"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,8 @@
     "corestore": "^6.0.6",
     "hyperdrive": "^12.2.0",
     "localdrive": "^2.2.0",
-    "standard": "^17.0.0"
+    "prettier": "^3.6.2",
+    "prettier-config-holepunch": "^1.0.0"
   },
   "dependencies": {
     "binary-stream-equals": "^1.0.0",
