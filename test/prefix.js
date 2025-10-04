@@ -17,7 +17,12 @@ test('prefix basic', async function (t) {
   const m = new MirrorDrive(local, hyper, { prefix: '/examples' })
   const diffs = await toArray(m)
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'add', key: '/examples/b.txt', bytesRemoved: 0, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'add',
+    key: '/examples/b.txt',
+    bytesRemoved: 0,
+    bytesAdded: 4
+  })
 
   t.ok(await hyper.entry('/examples/b.txt'))
 })

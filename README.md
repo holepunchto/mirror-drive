@@ -7,6 +7,7 @@ npm i mirror-drive
 ```
 
 ## Usage
+
 ```js
 import MirrorDrive from 'mirror-drive'
 
@@ -29,6 +30,7 @@ console.log(mirror.count) // => { files: 1, add: 1, remove: 0, change: 0 }
 ```
 
 Another example:
+
 ```js
 const mirror = new MirrorDrive(src, dst)
 
@@ -44,6 +46,7 @@ console.log(mirror.count) // => { files: 1, add: 1, remove: 0, change: 0 }
 Creates a mirror instance to efficiently move `src` drive into `dst` drive.
 
 Available `options`:
+
 ```js
 {
   prefix: '/',

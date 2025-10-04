@@ -20,7 +20,12 @@ test('symlink basic', async function (t) {
   t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'add', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'add',
+    key: '/tmp.shortcut',
+    bytesRemoved: 0,
+    bytesAdded: 0
+  })
 
   t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/tmp.txt')
 })
@@ -42,7 +47,12 @@ test('symlink not exists but entry does', async function (t) {
   t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/tmp.shortcut', bytesRemoved: 4, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/tmp.shortcut',
+    bytesRemoved: 4,
+    bytesAdded: 0
+  })
 
   t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/tmp.txt')
 })
@@ -64,7 +74,12 @@ test('symlink change', async function (t) {
   t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/tmp.shortcut',
+    bytesRemoved: 0,
+    bytesAdded: 0
+  })
 
   t.is((await hyper.entry('/tmp.shortcut')).value.linkname, '/buffer.txt')
 })
@@ -86,7 +101,12 @@ test('symlink prune', async function (t) {
   t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'remove', key: '/tmp.shortcut', bytesRemoved: 0, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'remove',
+    key: '/tmp.shortcut',
+    bytesRemoved: 0,
+    bytesAdded: 0
+  })
 
   t.absent(await local.entry('/tmp.shortcut'))
   t.absent(await hyper.entry('/tmp.shortcut'))

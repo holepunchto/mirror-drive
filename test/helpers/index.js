@@ -18,8 +18,11 @@ module.exports = {
   isWin
 }
 
-async function createDrives (t, opts, { setup = true, key } = {}) {
-  const local = new Localdrive(createTmpDir(t), { metadata: new Map(), ...opts })
+async function createDrives(t, opts, { setup = true, key } = {}) {
+  const local = new Localdrive(createTmpDir(t), {
+    metadata: new Map(),
+    ...opts
+  })
   const store = new Corestore(createTmpDir(t))
   const hyper = new Hyperdrive(store, key)
 
@@ -35,7 +38,7 @@ async function createDrives (t, opts, { setup = true, key } = {}) {
   return { local, hyper }
 }
 
-async function setupDrive (drive) {
+async function setupDrive(drive) {
   await drive.put('/equal.txt', b4a.from('same'))
   await drive.put('/equal-meta.txt', b4a.from('same'), { metadata: 'same' })
 
@@ -46,7 +49,7 @@ async function setupDrive (drive) {
   await drive.put('/tmp.txt', b4a.from('same'))
 }
 
-async function changeDrive (drive) {
+async function changeDrive(drive) {
   await drive.put('/new.txt', b4a.from('add'))
   await drive.put('/buffer.txt', b4a.from('edit'))
   await drive.put('/meta.txt', b4a.from('same'), { metadata: 'edit' })
@@ -64,15 +67,15 @@ async function changeDrive (drive) {
   ]
 }
 
-function sortObjects (array) {
+function sortObjects(array) {
   return array.map(JSON.stringify).sort()
 }
 
-function alike (a, b) {
+function alike(a, b) {
   return JSON.stringify(a) === JSON.stringify(b)
 }
 
-async function toArray (iterator) {
+async function toArray(iterator) {
   const array = []
   for await (const value of iterator) {
     array.push(value)
@@ -80,7 +83,7 @@ async function toArray (iterator) {
   return array
 }
 
-function createTmpDir (t) {
+function createTmpDir(t) {
   const tmpdir = path.join(os.tmpdir(), 'mirror-drive-test-')
   const dir = fs.mkdtempSync(tmpdir)
   t.teardown(() => fsp.rm(dir, { recursive: true }), { order: 1 })

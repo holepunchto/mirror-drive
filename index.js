@@ -4,7 +4,7 @@ const streamEquals = require('binary-stream-equals')
 const { pipelinePromise, isStream } = require('streamx')
 
 module.exports = class MirrorDrive {
-  constructor (src, dst, opts = {}) {
+  constructor(src, dst, opts = {}) {
     this.src = src
     this.dst = dst
 
@@ -25,32 +25,41 @@ module.exports = class MirrorDrive {
     this._ignore = opts.ignore ? toIgnoreFunction(opts.ignore) : null
   }
 
-  [Symbol.asyncIterator] () {
+  [Symbol.asyncIterator]() {
     return this.iterator
   }
 
-  async done () {
+  async done() {
     while (true) {
       const { done } = await this.iterator.next()
       if (done) break
     }
   }
 
-  async * _mirror () {
+  async *_mirror() {
     await this.src.ready()
     await this.dst.ready()
 
-    if (this.dst.core && !this.dst.core.writable) throw new Error('Destination must be writable')
+    if (this.dst.core && !this.dst.core.writable)
+      throw new Error('Destination must be writable')
 
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of this._list(
+        this.dst,
+        this.src
+      )) {
         if (srcEntry) continue
 
         this.count.remove++
         this.bytesRemoved += blobLength(dstEntry)
-        yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
+        yield {
+          op: 'remove',
+          key,
+          bytesRemoved: blobLength(dstEntry),
+          bytesAdded: 0
+        }
 
         if (!this.dryRun) await dst.del(key)
       }
@@ -61,7 +70,9 @@ module.exports = class MirrorDrive {
       if (dl.catch) dl.catch(noop)
     }
 
-    for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
+    for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, {
+      filter: this.filter
+    })) {
       if (!srcEntry) continue // Due entries option, src entry might not exist probably because it was pruned
 
       this.count.files++
@@ -69,7 +80,8 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const isSame = hasTransformers === false && await same(this, srcEntry, dstEntry)
+      const isSame =
+        hasTransformers === false && (await same(this, srcEntry, dstEntry))
 
       if (isSame) {
         if (this.includeEquals) {
@@ -82,11 +94,21 @@ module.exports = class MirrorDrive {
         this.count.change++
         this.bytesRemoved += blobLength(dstEntry)
         this.bytesAdded += blobLength(srcEntry)
-        yield { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
+        yield {
+          op: 'change',
+          key,
+          bytesRemoved: blobLength(dstEntry),
+          bytesAdded: blobLength(srcEntry)
+        }
       } else {
         this.count.add++
         this.bytesAdded += blobLength(srcEntry)
-        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
+        yield {
+          op: 'add',
+          key,
+          bytesRemoved: 0,
+          bytesAdded: blobLength(srcEntry)
+        }
       }
 
       if (this.dryRun) {
@@ -96,12 +118,14 @@ module.exports = class MirrorDrive {
       const transformers = []
 
       for (const transformer of this.transformers) {
-        if (typeof transformer !== 'function') throw new Error('transformer must be a function')
+        if (typeof transformer !== 'function')
+          throw new Error('transformer must be a function')
 
         const stream = transformer(key)
 
         if (stream === null) continue
-        if (!isStream(stream)) throw new Error('transformer must return a stream')
+        if (!isStream(stream))
+          throw new Error('transformer must return a stream')
 
         transformers.push(stream)
       }
@@ -112,7 +136,10 @@ module.exports = class MirrorDrive {
         await pipelinePromise(
           this.src.createReadStream(srcEntry),
           ...transformers,
-          dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+          dst.createWriteStream(key, {
+            executable: srcEntry.value.executable,
+            metadata: srcEntry.value.metadata
+          })
         )
       }
     }
@@ -120,7 +147,7 @@ module.exports = class MirrorDrive {
     if (this.batch) await dst.flush()
   }
 
-  async * _list (a, b, opts) {
+  async *_list(a, b, opts) {
     const list = this.entries || a.list(this.prefix, { ignore: this._ignore })
 
     for await (const entry of list) {
@@ -136,11 +163,11 @@ module.exports = class MirrorDrive {
   }
 }
 
-function blobLength (entry) {
+function blobLength(entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
 }
 
-async function same (m, srcEntry, dstEntry) {
+async function same(m, srcEntry, dstEntry) {
   if (!dstEntry) return false
 
   if (srcEntry.value.linkname || dstEntry.value.linkname) {
@@ -153,10 +180,13 @@ async function same (m, srcEntry, dstEntry) {
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
-  return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
+  return streamEquals(
+    m.src.createReadStream(srcEntry),
+    m.dst.createReadStream(dstEntry)
+  )
 }
 
-function sizeEquals (srcEntry, dstEntry) {
+function sizeEquals(srcEntry, dstEntry) {
   const srcBlob = srcEntry.value.blob
   const dstBlob = dstEntry.value.blob
 
@@ -166,7 +196,7 @@ function sizeEquals (srcEntry, dstEntry) {
   return srcBlob.byteLength === dstBlob.byteLength
 }
 
-function metadataEquals (m, srcEntry, dstEntry) {
+function metadataEquals(m, srcEntry, dstEntry) {
   if (!m.src.supportsMetadata || !m.dst.supportsMetadata) return true
 
   const srcMetadata = srcEntry.value.metadata
@@ -177,16 +207,20 @@ function metadataEquals (m, srcEntry, dstEntry) {
   }
 
   const noMetadata = !srcMetadata && !dstMetadata
-  const identicalMetadata = !!(srcMetadata && dstMetadata && sameData(srcMetadata, dstMetadata))
+  const identicalMetadata = !!(
+    srcMetadata &&
+    dstMetadata &&
+    sameData(srcMetadata, dstMetadata)
+  )
 
   return noMetadata || identicalMetadata
 }
 
-function toIgnoreFunction (ignore) {
+function toIgnoreFunction(ignore) {
   if (typeof ignore === 'function') return ignore
 
-  const all = [].concat(ignore).map(e => unixPathResolve('/', e))
-  return key => all.some(path => path === key || key.startsWith(path + '/'))
+  const all = [].concat(ignore).map((e) => unixPathResolve('/', e))
+  return (key) => all.some((path) => path === key || key.startsWith(path + '/'))
 }
 
-function noop () {}
+function noop() {}

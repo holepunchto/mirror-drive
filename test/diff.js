@@ -20,7 +20,12 @@ test('remove', async function (t) {
   t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'remove',
+    key: '/tmp.txt',
+    bytesRemoved: 4,
+    bytesAdded: 0
+  })
 
   t.absent(await hyper.entry('/tmp.txt'))
 })
@@ -42,7 +47,12 @@ test('add', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'add', key: '/new-tmp.txt', bytesRemoved: 0, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'add',
+    key: '/new-tmp.txt',
+    bytesRemoved: 0,
+    bytesAdded: 4
+  })
 
   t.alike(await hyper.get('/new-tmp.txt'), b4a.from('same'))
 })
@@ -64,7 +74,12 @@ test('change content', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/buffer.txt',
+    bytesRemoved: 4,
+    bytesAdded: 4
+  })
 
   t.alike(await hyper.get('/buffer.txt'), b4a.from('edit'))
 })
@@ -86,7 +101,12 @@ test('change size', async function (t) {
   t.is(m.bytesAdded, 7)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 7 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/buffer.txt',
+    bytesRemoved: 4,
+    bytesAdded: 7
+  })
 
   t.alike(await hyper.get('/buffer.txt'), b4a.from('edit-ed'))
 })
@@ -108,7 +128,12 @@ test('change metadata', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/meta.txt',
+    bytesRemoved: 4,
+    bytesAdded: 4
+  })
 
   t.alike((await hyper.entry('/meta.txt')).value.metadata, 'edit')
 })
