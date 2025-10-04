@@ -20,7 +20,12 @@ test('executable basic', { skip: isWin }, async function (t) {
   t.is(m.bytesAdded, 6)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'add', key: '/script.sh', bytesRemoved: 0, bytesAdded: 6 })
+  t.alike(diffs[0], {
+    op: 'add',
+    key: '/script.sh',
+    bytesRemoved: 0,
+    bytesAdded: 6
+  })
 
   t.alike((await hyper.entry('/script.sh')).value.executable, true)
 })
@@ -42,7 +47,12 @@ test('executable change', { skip: isWin }, async function (t) {
   t.is(m.bytesAdded, 6)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/script.sh', bytesRemoved: 6, bytesAdded: 6 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/script.sh',
+    bytesRemoved: 6,
+    bytesAdded: 6
+  })
 
   t.alike((await hyper.entry('/script.sh')).value.executable, false)
 })

@@ -1,5 +1,10 @@
 const test = require('brittle')
-const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
+const {
+  createDrives,
+  changeDrive,
+  sortObjects,
+  toArray
+} = require('./helpers/index.js')
 const unixPathResolve = require('unix-path-resolve')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
@@ -60,7 +65,9 @@ test('prune disabled', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   const actual = []
-  const expected = (await changeDrive(local)).filter(exp => exp.op !== 'remove')
+  const expected = (await changeDrive(local)).filter(
+    (exp) => exp.op !== 'remove'
+  )
 
   const m = new MirrorDrive(local, hyper, { prune: false, includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
@@ -80,11 +87,19 @@ test('prune disabled', async function (t) {
   const m2 = new MirrorDrive(local, hyper)
   const diffs = await toArray(m2)
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
+  t.alike(diffs[0], {
+    op: 'remove',
+    key: '/tmp.txt',
+    bytesRemoved: 4,
+    bytesAdded: 0
+  })
 })
 
 test('mirror into a readonly drive', async function (t) {
-  const { local, hyper } = await createDrives(t, null, { setup: false, key: b4a.alloc(32) })
+  const { local, hyper } = await createDrives(t, null, {
+    setup: false,
+    key: b4a.alloc(32)
+  })
 
   await local.put('/tmp.txt', b4a.from('hello'))
 
@@ -103,7 +118,9 @@ test('mirror with entries option', async function (t) {
 
   const entries = ['/tmp.txt', '/buffer.txt', '/equal.txt', '/new.txt']
   const actual = []
-  const expected = (await changeDrive(local)).filter(v => entries.indexOf(v.key) > -1)
+  const expected = (await changeDrive(local)).filter(
+    (v) => entries.indexOf(v.key) > -1
+  )
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true, entries })
 
@@ -143,7 +160,9 @@ test('mirror localdrive into hyperdrive with ignores', async function (t) {
   await local.put('/folder/file.txt', b4a.from('same'))
   await local.put('/folder/subfolder/file.txt', b4a.from('same'))
 
-  const m = new MirrorDrive(local, hyper, { ignore: ['/equal.txt', 'tmp.txt', '/folder/subfolder'] })
+  const m = new MirrorDrive(local, hyper, {
+    ignore: ['/equal.txt', 'tmp.txt', '/folder/subfolder']
+  })
   await m.done()
 
   t.is(await hyper.get('/equal.txt'), null)
@@ -162,7 +181,7 @@ test('mirror localdrive into hyperdrive with ignore and unignore function', asyn
   await local.put('/folder/subfolder/otherfile.txt', b4a.from('same'))
   const ignores = ['/equal.txt', 'tmp.txt', '/folder/subfolder']
   const unignores = ['/folder/subfolder/otherfile.txt']
-  function ignore (key) {
+  function ignore(key) {
     for (const u of unignores) {
       const path = unixPathResolve('/', u)
       if (path === key) return false

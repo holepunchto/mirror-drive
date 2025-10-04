@@ -23,7 +23,7 @@ test('options metadataEquals - equal', async function (t) {
 
   t.is(diffs.length, 0)
 
-  function metadataEquals (srcMetadata, dstMetadata) {
+  function metadataEquals(srcMetadata, dstMetadata) {
     t.ok(srcMetadata === 'same')
     t.ok(dstMetadata === 'same')
     return srcMetadata === dstMetadata
@@ -49,9 +49,14 @@ test('options metadataEquals - change', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/tmp.txt',
+    bytesRemoved: 4,
+    bytesAdded: 4
+  })
 
-  function metadataEquals (srcMetadata, dstMetadata) {
+  function metadataEquals(srcMetadata, dstMetadata) {
     t.ok(srcMetadata === 'same')
     t.ok(dstMetadata === 'edit')
     return srcMetadata === dstMetadata
@@ -77,9 +82,14 @@ test('options metadataEquals - remove metadata', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/tmp.txt',
+    bytesRemoved: 4,
+    bytesAdded: 4
+  })
 
-  function metadataEquals (srcMetadata, dstMetadata) {
+  function metadataEquals(srcMetadata, dstMetadata) {
     t.ok(srcMetadata === null)
     t.ok(dstMetadata === 'same')
     return srcMetadata === dstMetadata
@@ -105,9 +115,14 @@ test('options metadataEquals - new metadata', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'change',
+    key: '/tmp.txt',
+    bytesRemoved: 4,
+    bytesAdded: 4
+  })
 
-  function metadataEquals (srcMetadata, dstMetadata) {
+  function metadataEquals(srcMetadata, dstMetadata) {
     t.ok(srcMetadata === 'same')
     t.ok(dstMetadata === null)
     return srcMetadata === dstMetadata
@@ -133,9 +148,14 @@ test('options metadataEquals - new entry', async function (t) {
   t.is(m.bytesAdded, 4)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'add', key: '/tmp.txt', bytesRemoved: 0, bytesAdded: 4 })
+  t.alike(diffs[0], {
+    op: 'add',
+    key: '/tmp.txt',
+    bytesRemoved: 0,
+    bytesAdded: 4
+  })
 
-  function metadataEquals (srcMetadata, dstMetadata) {
+  function metadataEquals(srcMetadata, dstMetadata) {
     t.fail('should not have metadata check')
     return false
   }
