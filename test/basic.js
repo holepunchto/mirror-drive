@@ -1,10 +1,5 @@
 const test = require('brittle')
-const {
-  createDrives,
-  changeDrive,
-  sortObjects,
-  toArray
-} = require('./helpers/index.js')
+const { createDrives, changeDrive, sortObjects, toArray } = require('./helpers/index.js')
 const unixPathResolve = require('unix-path-resolve')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
@@ -65,9 +60,7 @@ test('prune disabled', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   const actual = []
-  const expected = (await changeDrive(local)).filter(
-    (exp) => exp.op !== 'remove'
-  )
+  const expected = (await changeDrive(local)).filter((exp) => exp.op !== 'remove')
 
   const m = new MirrorDrive(local, hyper, { prune: false, includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
@@ -118,9 +111,7 @@ test('mirror with entries option', async function (t) {
 
   const entries = ['/tmp.txt', '/buffer.txt', '/equal.txt', '/new.txt']
   const actual = []
-  const expected = (await changeDrive(local)).filter(
-    (v) => entries.indexOf(v.key) > -1
-  )
+  const expected = (await changeDrive(local)).filter((v) => entries.indexOf(v.key) > -1)
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true, entries })
 

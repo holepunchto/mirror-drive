@@ -40,16 +40,12 @@ module.exports = class MirrorDrive {
     await this.src.ready()
     await this.dst.ready()
 
-    if (this.dst.core && !this.dst.core.writable)
-      throw new Error('Destination must be writable')
+    if (this.dst.core && !this.dst.core.writable) throw new Error('Destination must be writable')
 
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of this._list(
-        this.dst,
-        this.src
-      )) {
+      for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src)) {
         if (srcEntry) continue
 
         this.count.remove++
@@ -80,8 +76,7 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const isSame =
-        hasTransformers === false && (await same(this, srcEntry, dstEntry))
+      const isSame = hasTransformers === false && (await same(this, srcEntry, dstEntry))
 
       if (isSame) {
         if (this.includeEquals) {
@@ -118,14 +113,12 @@ module.exports = class MirrorDrive {
       const transformers = []
 
       for (const transformer of this.transformers) {
-        if (typeof transformer !== 'function')
-          throw new Error('transformer must be a function')
+        if (typeof transformer !== 'function') throw new Error('transformer must be a function')
 
         const stream = transformer(key)
 
         if (stream === null) continue
-        if (!isStream(stream))
-          throw new Error('transformer must return a stream')
+        if (!isStream(stream)) throw new Error('transformer must return a stream')
 
         transformers.push(stream)
       }
@@ -180,10 +173,7 @@ async function same(m, srcEntry, dstEntry) {
 
   if (!metadataEquals(m, srcEntry, dstEntry)) return false
 
-  return streamEquals(
-    m.src.createReadStream(srcEntry),
-    m.dst.createReadStream(dstEntry)
-  )
+  return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
 function sizeEquals(srcEntry, dstEntry) {
@@ -207,11 +197,7 @@ function metadataEquals(m, srcEntry, dstEntry) {
   }
 
   const noMetadata = !srcMetadata && !dstMetadata
-  const identicalMetadata = !!(
-    srcMetadata &&
-    dstMetadata &&
-    sameData(srcMetadata, dstMetadata)
-  )
+  const identicalMetadata = !!(srcMetadata && dstMetadata && sameData(srcMetadata, dstMetadata))
 
   return noMetadata || identicalMetadata
 }
