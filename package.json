@@ -1,6 +1,6 @@
 {
   "name": "mirror-drive",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Mirror a hyperdrive or localdrive into another one",
   "main": "index.js",
   "files": [
