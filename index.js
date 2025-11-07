@@ -122,16 +122,26 @@ module.exports = class MirrorDrive {
 
   async * _list (a, b, opts) {
     const list = this.entries || a.list(this.prefix, { ignore: this._ignore })
+    const filter = opts && opts.filter
 
     for await (const entry of list) {
       const key = typeof entry === 'object' ? entry.key : entry
 
-      if (opts && opts.filter && !opts.filter(key)) continue
+      if (filter && !filter(key)) continue
 
       const entryA = await a.entry(entry)
       const entryB = await b.entry(key)
 
       yield [key, entryA, entryB]
+    }
+
+    if (this.prefix !== '/' && (!filter || filter(this.prefix))) {
+      const entryA = await a.entry(this.prefix)
+      const entryB = await b.entry(this.prefix)
+
+      if (!entryA && !entryB) return
+
+      yield [this.prefix, entryA, entryB]
     }
   }
 }
