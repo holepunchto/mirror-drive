@@ -12,8 +12,8 @@ module.exports = class MirrorDrive {
     this.prefix = toArray(opts.prefix || '/')
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune !== false
-    this.includeProgress = !!opts.progress && !!src.download && !!src.getBlobs
-    this.preload = opts.preload !== false && !!src.download
+    this.preload = opts.preload !== false && !!src.getBlobs
+    this.includeProgress = !!opts.progress && !!src.getBlobs
     this.includeEquals = !!opts.includeEquals
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
@@ -73,7 +73,7 @@ module.exports = class MirrorDrive {
     const blobs = await this.src.getBlobs()
 
     for (const entry of entries) {
-      const blob = entry.blob
+      const blob = entry.value.blob
       if (!blob) continue
       const dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
       await dl.ready()
