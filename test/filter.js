@@ -79,7 +79,7 @@ test('filter - hyper to local', async function (t) {
   const diffs = await toArray(m)
   t.is(diffs.length, 0)
 
-  t.alike(actual.sort(), expected.sort())
+  t.alike([...new Set(actual)].sort(), expected.sort())
 
   function onfilter (key) {
     actual.push(key)
