@@ -46,7 +46,8 @@ module.exports = class MirrorDrive {
   get downloadProgress () {
     if (this.finished) return 1
     if (!this.downloadedBlocksEstimate) return 0
-    return Math.min(0.9, this.downloadedBlocks / this.downloadedBlocksEstimate)
+    // leave 3% incase our estimatation is wrong - then at least it wont appear done...
+    return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
   }
 
   async done () {
