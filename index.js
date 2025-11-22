@@ -120,14 +120,10 @@ module.exports = class MirrorDrive {
     }
 
     if (this.preload) {
-      let entries = []
+      const entries = []
 
       for await (const [, srcEntry] of this._list(this.src, null, this.filter)) {
         entries.push(srcEntry)
-        // avoid having too may entries in memory
-        if (entries.length < 2048) continue
-        await this._flushPreload(entries)
-        entries = []
       }
 
       // flush in bg
