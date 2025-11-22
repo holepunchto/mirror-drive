@@ -70,11 +70,12 @@ module.exports = class MirrorDrive {
 
   async _flushPreload (entries) {
     const ranges = []
+    const blobs = await this.src.getBlobs()
 
     for (const entry of entries) {
       const blob = entry.blob
       if (!blob) continue
-      const dl = this.src.download({ start: blob.blockOffset, length: blob.blockLength })
+      const dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
       await dl.ready()
       ranges.push(dl)
     }
