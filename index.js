@@ -1,6 +1,7 @@
 const sameData = require('same-data')
 const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
+const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
 
 module.exports = class MirrorDrive {
@@ -8,9 +9,11 @@ module.exports = class MirrorDrive {
     this.src = src
     this.dst = dst
 
-    this.prefix = opts.prefix || '/'
+    this.prefix = toArray(opts.prefix || '/')
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune !== false
+    this.preload = opts.preload !== false && !!src.getBlobs
+    this.includeProgress = !!opts.progress && !!src.getBlobs
     this.includeEquals = !!opts.includeEquals
     this.filter = opts.filter || null
     this.metadataEquals = opts.metadataEquals || null
@@ -21,12 +24,30 @@ module.exports = class MirrorDrive {
     this.count = { files: 0, add: 0, remove: 0, change: 0 }
     this.bytesRemoved = 0
     this.bytesAdded = 0
+    this.ignore = opts.ignore ? toIgnoreFunction(opts.ignore) : null
+    this.finished = false
+
+    this.downloadedBlocks = 0
+    this.downloadedBlocksEstimate = 0
+    this.downloadedBytes = 0
+    this.downloadSpeed = this.includeProgress ? speedometer() : null
+
+    this.uploadedBlocks = 0
+    this.uploadedBytes = 0
+    this.uploadSpeed = this.includeProgress ? speedometer() : null
+
     this.iterator = this._mirror()
-    this._ignore = opts.ignore ? toIgnoreFunction(opts.ignore) : null
   }
 
   [Symbol.asyncIterator] () {
     return this.iterator
+  }
+
+  get downloadProgress () {
+    if (this.finished) return 1
+    if (!this.downloadedBlocksEstimate) return 0
+    // leave 3% incase our estimatation is wrong - then at least it wont appear done...
+    return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
   }
 
   async done () {
@@ -36,16 +57,60 @@ module.exports = class MirrorDrive {
     }
   }
 
+  _onupload (index, byteLength) {
+    this.uploadedBlocks++
+    this.uploadedBytes += byteLength
+    this.uploadSpeed(byteLength)
+  }
+
+  _ondownload (index, byteLength) {
+    this.downloadedBlocks++
+    this.downloadedBytes += byteLength
+    this.downloadSpeed(byteLength)
+  }
+
+  async _flushPreload (entries) {
+    const ranges = []
+    const blobs = await this.src.getBlobs()
+
+    for (const entry of entries) {
+      const blob = entry.value.blob
+      if (!blob) continue
+      const dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
+      await dl.ready()
+      ranges.push(dl)
+    }
+
+    this.downloadedBlocksEstimate = this.downloadedBlocks
+    for (const dl of ranges) {
+      if (!dl.request.context) continue
+      this.downloadedBlocksEstimate += (dl.request.context.end - dl.request.context.start)
+    }
+
+    for (const dl of ranges) {
+      await dl.done()
+    }
+  }
+
   async * _mirror () {
     await this.src.ready()
     await this.dst.ready()
 
     if (this.dst.core && !this.dst.core.writable) throw new Error('Destination must be writable')
 
+    const blobs = this.includeProgress ? await this.src.getBlobs() : null
+    const onupload = this._onupload.bind(this)
+    const ondownload = this._ondownload.bind(this)
+
+    if (blobs) {
+      blobs.core.on('upload', onupload)
+      blobs.core.on('download', ondownload)
+    }
+
     const dst = this.batch ? this.dst.batch() : this.dst
 
     if (this.prune) {
-      for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src)) {
+      for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src, null)) {
         if (srcEntry) continue
 
         this.count.remove++
@@ -56,12 +121,18 @@ module.exports = class MirrorDrive {
       }
     }
 
-    if (this.src.download && !this.entries) {
-      const dl = this.src.download(this.prefix)
-      if (dl.catch) dl.catch(noop)
+    if (this.preload) {
+      const entries = []
+
+      for await (const [, srcEntry] of this._list(this.src, null, this.filter)) {
+        entries.push(srcEntry)
+      }
+
+      // flush in bg
+      this._flushPreload(entries).catch(noop)
     }
 
-    for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, { filter: this.filter })) {
+    for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, this.filter)) {
       if (!srcEntry) continue // Due entries option, src entry might not exist probably because it was pruned
 
       this.count.files++
@@ -118,30 +189,38 @@ module.exports = class MirrorDrive {
     }
 
     if (this.batch) await dst.flush()
-  }
 
-  async * _list (a, b, opts) {
-    const list = this.entries || a.list(this.prefix, { ignore: this._ignore })
-    const filter = opts && opts.filter
-
-    for await (const entry of list) {
-      const key = typeof entry === 'object' ? entry.key : entry
-
-      if (filter && !filter(key)) continue
-
-      const entryA = await a.entry(entry)
-      const entryB = await b.entry(key)
-
-      yield [key, entryA, entryB]
+    if (blobs) {
+      blobs.core.off('upload', onupload)
+      blobs.core.off('download', ondownload)
     }
 
-    if (this.prefix !== '/' && (!filter || filter(this.prefix))) {
-      const entryA = await a.entry(this.prefix)
-      const entryB = await b.entry(this.prefix)
+    this.finished = true
+  }
 
-      if (!entryA && !entryB) return
+  async * _list (a, b, filter) {
+    for (const prefix of this.prefix) {
+      const list = this.entries || a.list(prefix, { ignore: this.ignore })
 
-      yield [this.prefix, entryA, entryB]
+      for await (const entry of list) {
+        const key = typeof entry === 'object' ? entry.key : entry
+
+        if (filter && !filter(key)) continue
+
+        const entryA = await a.entry(entry)
+        const entryB = b ? await b.entry(key) : null
+
+        yield [key, entryA, entryB]
+      }
+
+      if (prefix !== '/' && (!filter || filter(prefix))) {
+        const entryA = await a.entry(prefix)
+        const entryB = b ? await b.entry(prefix) : null
+
+        if (!entryA && !entryB) return
+
+        yield [prefix, entryA, entryB]
+      }
     }
   }
 }
@@ -197,6 +276,10 @@ function toIgnoreFunction (ignore) {
 
   const all = [].concat(ignore).map(e => unixPathResolve('/', e))
   return key => all.some(path => path === key || key.startsWith(path + '/'))
+}
+
+function toArray (prefix) {
+  return Array.isArray(prefix) ? prefix : [prefix]
 }
 
 function noop () {}
