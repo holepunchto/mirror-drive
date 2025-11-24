@@ -7,6 +7,11 @@
     "index.js",
     "lib/**.js"
   ],
+  "imports": {
+    "events": {
+      "bare": "bare-events"
+    }
+  },
   "scripts": {
     "test": "standard && brittle test/*.js",
     "lint": "standard"
@@ -30,6 +35,7 @@
     "standard": "^17.0.0"
   },
   "dependencies": {
+    "bare-events": "^2.8.2",
     "binary-stream-equals": "^1.0.0",
     "same-data": "^1.0.0",
     "speedometer": "^1.1.0",

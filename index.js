@@ -1,3 +1,4 @@
+const EventEmitter = require('events')
 const sameData = require('same-data')
 const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
@@ -36,7 +37,9 @@ module.exports = class MirrorDrive {
     this.uploadedBytes = 0
     this.uploadSpeed = this.includeProgress ? speedometer() : null
 
-    this.iterator = this._mirror()
+    this.iterator = this._init()
+
+    this.monitors = new Set()
   }
 
   [Symbol.asyncIterator] () {
@@ -52,6 +55,12 @@ module.exports = class MirrorDrive {
     if (!this.downloadedBlocksEstimate) return 0
     // leave 3% incase our estimatation is wrong - then at least it wont appear done...
     return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
+  }
+
+  monitor () {
+    const monitor = new Monitor(this)
+    this.monitors.add(monitor)
+    return monitor
   }
 
   async done () {
@@ -93,6 +102,14 @@ module.exports = class MirrorDrive {
 
     for (const dl of ranges) {
       await dl.done()
+    }
+  }
+
+  async * _init () {
+    try {
+      for await (const out of this._mirror()) yield out
+    } finally {
+      for (const monitor of this.monitors) monitor.stop()
     }
   }
 
@@ -287,3 +304,46 @@ function toArray (prefix) {
 }
 
 function noop () {}
+
+class Monitor extends EventEmitter {
+  static timer = null
+  static monitors = new Set()
+  static stats (mirror) {
+    // NOTE: immutable (append-only) data structure
+    return {
+      peers: mirror.peers.length,
+      download: {
+        bytes: mirror.downloadedBytes,
+        blocks: mirror.downloadedBlocks,
+        speed: mirror.downloadSpeed(),
+        progress: mirror.downloadProgress
+      },
+      upload: {
+        bytes: mirror.uploadedBytes,
+        blocks: mirror.uploadedBlocks,
+        speed: mirror.uploadSpeed()
+      }
+    }
+  }
+
+  static sweep () {
+    for (const monitor of this.monitors) {
+      monitor.emit('stats', this.stats(monitor.mirror))
+    }
+  }
+
+  constructor (mirror) {
+    super()
+    if (!this.constructor.timer) {
+      this.constructor.timer = setInterval(() => this.constructor.sweep(), 250)
+      this.constructor.timer.unref()
+    }
+    this.mirror = mirror
+    this.fn = null
+    this.constructor.monitors.add(this)
+  }
+
+  stop () {
+    this.constructor.monitors.delete(this)
+  }
+}
