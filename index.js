@@ -1,8 +1,63 @@
+const EventEmitter = require('events')
 const sameData = require('same-data')
 const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
 const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
+
+class Monitor extends EventEmitter {
+  constructor (mirror, { interval = 250 } = {}) {
+    super()
+
+    this.mirror = mirror
+    this.interval = setInterval(this.update.bind(this), interval)
+    this.stats = null
+    this.index = mirror.monitors.push(this) - 1
+
+    this.update() // populate latest stats
+  }
+
+  get destroyed () {
+    return this.index === -1
+  }
+
+  update () {
+    if (this.index === -1) return
+
+    // NOTE: immutable (append-only) data structure
+    this.stats = {
+      peers: this.mirror.peers.length,
+      download: {
+        bytes: this.mirror.downloadedBytes,
+        blocks: this.mirror.downloadedBlocks,
+        speed: this.mirror.downloadSpeed(),
+        progress: this.mirror.downloadProgress
+      },
+      upload: {
+        bytes: this.mirror.uploadedBytes,
+        blocks: this.mirror.uploadedBlocks,
+        speed: this.mirror.uploadSpeed()
+      }
+    }
+
+    this.emit('update', this.stats)
+  }
+
+  destroy () {
+    if (this.index === -1) return
+
+    clearInterval(this.interval)
+
+    const head = this.mirror.monitors.pop()
+    if (head !== this) {
+      this.mirror.monitors[this.index] = head
+      head.index = this.index
+    }
+
+    this.index = -1
+    this.emit('destroy')
+  }
+}
 
 module.exports = class MirrorDrive {
   constructor (src, dst, opts = {}) {
@@ -36,7 +91,8 @@ module.exports = class MirrorDrive {
     this.uploadedBytes = 0
     this.uploadSpeed = this.includeProgress ? speedometer() : null
 
-    this.iterator = this._mirror()
+    this.monitors = []
+    this.iterator = this._init()
   }
 
   [Symbol.asyncIterator] () {
@@ -51,7 +107,14 @@ module.exports = class MirrorDrive {
     if (this.finished) return 1
     if (!this.downloadedBlocksEstimate) return 0
     // leave 3% incase our estimatation is wrong - then at least it wont appear done...
-    return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
+    return Math.min(0.99, this.downloadedBlocks / this.downloadedBlocksEstimate)
+  }
+
+  monitor (opts) {
+    this.includeProgress = true
+    if (this.downloadSpeed === null) this.downloadSpeed = speedometer()
+    if (this.uploadSpeed === null) this.uploadSpeed = speedometer()
+    return new Monitor(this, opts)
   }
 
   async done () {
@@ -93,6 +156,16 @@ module.exports = class MirrorDrive {
 
     for (const dl of ranges) {
       await dl.done()
+    }
+  }
+
+  async * _init () {
+    try {
+      for await (const out of this._mirror()) yield out
+    } finally {
+      while (this.monitors.length) {
+        this.monitors[this.monitors.length - 1].destroy()
+      }
     }
   }
 
