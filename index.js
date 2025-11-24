@@ -104,6 +104,8 @@ module.exports = class MirrorDrive {
 
   monitor (opts) {
     this.includeProgress = true
+    if (this.downloadSpeed === null) this.downloadSpeed = speedometer()
+    if (this.uploadSpeed === null) this.uploadSpeed = speedometer()
     return new Monitor(this, opts)
   }
 
