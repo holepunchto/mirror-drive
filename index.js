@@ -60,6 +60,7 @@ module.exports = class MirrorDrive {
   monitor () {
     const monitor = new Monitor(this)
     this.monitors.add(monitor)
+    monitor.once('stop', () => { this.monitors.delete(monitor) })
     return monitor
   }
 
@@ -344,6 +345,7 @@ class Monitor extends EventEmitter {
   }
 
   stop () {
+    this.emit('stop')
     this.constructor.monitors.delete(this)
   }
 }
