@@ -23,6 +23,8 @@ class Monitor extends EventEmitter {
 
   update () {
     if (this.index === -1) return
+
+    // NOTE: immutable (append-only) data structure
     this.stats = {
       peers: this.mirror.peers.length,
       download: {
@@ -37,6 +39,7 @@ class Monitor extends EventEmitter {
         speed: this.mirror.uploadSpeed()
       }
     }
+
     this.emit('update', this.stats)
   }
 
