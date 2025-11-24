@@ -12,9 +12,13 @@ class Monitor extends EventEmitter {
     this.mirror = mirror
     this.interval = setInterval(this.update.bind(this), interval)
     this.stats = null
-    this.index = mirror.monitors.push(this)
+    this.index = mirror.monitors.push(this) - 1
 
     this.update() // populate latest stats
+  }
+
+  get destroyed () {
+    return this.index === -1
   }
 
   update () {
@@ -36,7 +40,7 @@ class Monitor extends EventEmitter {
     this.emit('update', this.stats)
   }
 
-  stop () {
+  destroy () {
     if (this.index === -1) return
 
     clearInterval(this.interval)
@@ -48,7 +52,7 @@ class Monitor extends EventEmitter {
     }
 
     this.index = -1
-    this.emit('stop')
+    this.emit('destroy')
   }
 }
 
@@ -157,7 +161,7 @@ module.exports = class MirrorDrive {
       for await (const out of this._mirror()) yield out
     } finally {
       while (this.monitors.length) {
-        this.monitors[this.monitors.length - 1].stop()
+        this.monitors[this.monitors.length - 1].destroy()
       }
     }
   }
