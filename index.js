@@ -43,6 +43,10 @@ module.exports = class MirrorDrive {
     return this.iterator
   }
 
+  get peers () {
+    return this.src.core?.peers || []
+  }
+
   get downloadProgress () {
     if (this.finished) return 1
     if (!this.downloadedBlocksEstimate) return 0
