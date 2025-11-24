@@ -104,7 +104,7 @@ module.exports = class MirrorDrive {
     if (this.finished) return 1
     if (!this.downloadedBlocksEstimate) return 0
     // leave 3% incase our estimatation is wrong - then at least it wont appear done...
-    return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
+    return Math.min(0.99, this.downloadedBlocks / this.downloadedBlocksEstimate)
   }
 
   monitor (opts) {
