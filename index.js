@@ -294,7 +294,7 @@ module.exports = class MirrorDrive {
         const entryA = await a.entry(prefix)
         const entryB = b ? await b.entry(prefix) : null
 
-        if (!entryA && !entryB) return
+        if (!entryA && !entryB) continue
 
         yield [prefix, entryA, entryB]
       }
