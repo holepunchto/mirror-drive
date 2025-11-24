@@ -18,6 +18,7 @@ class Monitor extends EventEmitter {
   }
 
   update () {
+    if (this.index === -1) return
     this.stats = {
       peers: this.mirror.peers.length,
       download: {
