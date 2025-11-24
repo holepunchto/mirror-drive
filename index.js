@@ -153,7 +153,9 @@ module.exports = class MirrorDrive {
     try {
       for await (const out of this._mirror()) yield out
     } finally {
-      for (const monitor of this.monitors) monitor.stop()
+      while (this.monitors.length) {
+        this.monitors[this.monitors.length - 1].stop()
+      }
     }
   }
 
