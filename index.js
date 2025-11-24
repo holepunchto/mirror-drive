@@ -5,6 +5,52 @@ const streamEquals = require('binary-stream-equals')
 const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
 
+class Monitor extends EventEmitter {
+  constructor (mirror, { interval = 250 } = {}) {
+    super()
+
+    this.mirror = mirror
+    this.interval = setInterval(this.update.bind(this), interval)
+    this.stats = null
+    this.index = mirror.monitors.push(this)
+
+    this.update() // populate latest stats
+  }
+
+  update () {
+    this.stats = {
+      peers: this.mirror.peers.length,
+      download: {
+        bytes: this.mirror.downloadedBytes,
+        blocks: this.mirror.downloadedBlocks,
+        speed: this.mirror.downloadSpeed(),
+        progress: this.mirror.downloadProgress
+      },
+      upload: {
+        bytes: this.mirror.uploadedBytes,
+        blocks: this.mirror.uploadedBlocks,
+        speed: this.mirror.uploadSpeed()
+      }
+    }
+    this.emit('update', this.stats)
+  }
+
+  stop () {
+    if (this.index === -1) return
+
+    clearInterval(this.interval)
+
+    const head = this.mirror.monitors.pop()
+    if (head !== this) {
+      this.mirror.monitors[this.index] = head
+      head.index = this.index
+    }
+
+    this.index = -1
+    this.emit('stop')
+  }
+}
+
 module.exports = class MirrorDrive {
   constructor (src, dst, opts = {}) {
     this.src = src
@@ -37,9 +83,8 @@ module.exports = class MirrorDrive {
     this.uploadedBytes = 0
     this.uploadSpeed = this.includeProgress ? speedometer() : null
 
+    this.monitors = []
     this.iterator = this._init()
-
-    this.monitors = new Set()
   }
 
   [Symbol.asyncIterator] () {
@@ -57,11 +102,9 @@ module.exports = class MirrorDrive {
     return Math.min(0.97, this.downloadedBlocks / this.downloadedBlocksEstimate)
   }
 
-  monitor () {
-    const monitor = new Monitor(this)
-    this.monitors.add(monitor)
-    monitor.once('stop', () => { this.monitors.delete(monitor) })
-    return monitor
+  monitor (opts) {
+    this.includeProgress = true
+    return new Monitor(this, opts)
   }
 
   async done () {
@@ -305,47 +348,3 @@ function toArray (prefix) {
 }
 
 function noop () {}
-
-class Monitor extends EventEmitter {
-  static timer = null
-  static monitors = new Set()
-  static stats (mirror) {
-    // NOTE: immutable (append-only) data structure
-    return {
-      peers: mirror.peers.length,
-      download: {
-        bytes: mirror.downloadedBytes,
-        blocks: mirror.downloadedBlocks,
-        speed: mirror.downloadSpeed(),
-        progress: mirror.downloadProgress
-      },
-      upload: {
-        bytes: mirror.uploadedBytes,
-        blocks: mirror.uploadedBlocks,
-        speed: mirror.uploadSpeed()
-      }
-    }
-  }
-
-  static sweep () {
-    for (const monitor of this.monitors) {
-      monitor.emit('stats', this.stats(monitor.mirror))
-    }
-  }
-
-  constructor (mirror) {
-    super()
-    if (!this.constructor.timer) {
-      this.constructor.timer = setInterval(() => this.constructor.sweep(), 250)
-      this.constructor.timer.unref()
-    }
-    this.mirror = mirror
-    this.fn = null
-    this.constructor.monitors.add(this)
-  }
-
-  stop () {
-    this.emit('stop')
-    this.constructor.monitors.delete(this)
-  }
-}
