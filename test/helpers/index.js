@@ -1,11 +1,11 @@
 const path = require('path')
 const os = require('os')
-const fs = require('fs')
 const fsp = require('fs/promises')
 const Localdrive = require('localdrive')
 const Hyperdrive = require('hyperdrive')
 const Corestore = require('corestore')
 const b4a = require('b4a')
+const mkdtempSync = require('./mkdtemp.js')
 
 const isWin = os.platform() === 'win32'
 
@@ -85,7 +85,7 @@ async function toArray(iterator) {
 
 function createTmpDir(t) {
   const tmpdir = path.join(os.tmpdir(), 'mirror-drive-test-')
-  const dir = fs.mkdtempSync(tmpdir)
+  const dir = mkdtempSync(tmpdir)
   t.teardown(() => fsp.rm(dir, { recursive: true }), { order: 1 })
   return dir
 }

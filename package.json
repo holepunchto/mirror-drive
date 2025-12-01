@@ -7,10 +7,34 @@
     "index.js",
     "lib/**.js"
   ],
+  "imports": {
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
+    },
+    "os": {
+      "bare": "bare-os",
+      "default": "os"
+    },
+    "fs": {
+      "bare": "bare-fs",
+      "default": "fs"
+    },
+    "fs/promises": {
+      "bare": "bare-fs/promises",
+      "default": "fs/promises"
+    },
+    "stream": {
+      "bare": "bare-stream",
+      "default": "stream"
+    }
+  },
   "scripts": {
     "format": "prettier --write .",
-    "lint": "prettier --check .",
-    "test": "npm run lint && brittle test/*.js"
+    "lint": "prettier --check . && lunte",
+    "test": "npm run test:node && npm run test:bare",
+    "test:node": "brittle-node test/*.js",
+    "test:bare": "brittle-bare test/*.js"
   },
   "repository": {
     "type": "git",
@@ -24,10 +48,16 @@
   "homepage": "https://github.com/holepunchto/mirror-drive",
   "devDependencies": {
     "b4a": "^1.6.0",
-    "brittle": "^3.1.0",
+    "bare-fs": "^4.0.1",
+    "bare-os": "^3.0.1",
+    "bare-path": "^3.0.0",
+    "bare-process": "^4.2.2",
+    "bare-stream": "^2.6.5",
+    "brittle": "^3.19.1",
     "corestore": "^6.0.6",
     "hyperdrive": "^12.2.0",
     "localdrive": "^2.2.0",
+    "lunte": "^1.0.0",
     "prettier": "^3.6.2",
     "prettier-config-holepunch": "^2.0.0"
   },
