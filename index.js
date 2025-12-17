@@ -6,7 +6,7 @@ const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
 
 class Monitor extends EventEmitter {
-  constructor (mirror, { interval = 250 } = {}) {
+  constructor(mirror, { interval = 250 } = {}) {
     super()
 
     this.mirror = mirror
@@ -17,11 +17,11 @@ class Monitor extends EventEmitter {
     this.update() // populate latest stats
   }
 
-  get destroyed () {
+  get destroyed() {
     return this.index === -1
   }
 
-  update () {
+  update() {
     if (this.index === -1) return
 
     // NOTE: immutable (append-only) data structure
@@ -43,7 +43,7 @@ class Monitor extends EventEmitter {
     this.emit('update', this.stats)
   }
 
-  destroy () {
+  destroy() {
     if (this.index === -1) return
 
     clearInterval(this.interval)
@@ -60,7 +60,7 @@ class Monitor extends EventEmitter {
 }
 
 module.exports = class MirrorDrive {
-  constructor (src, dst, opts = {}) {
+  constructor(src, dst, opts = {}) {
     this.src = src
     this.dst = dst
 
@@ -95,48 +95,48 @@ module.exports = class MirrorDrive {
     this.iterator = this._init()
   }
 
-  [Symbol.asyncIterator] () {
+  [Symbol.asyncIterator]() {
     return this.iterator
   }
 
-  get peers () {
+  get peers() {
     return this.src.core?.peers || []
   }
 
-  get downloadProgress () {
+  get downloadProgress() {
     if (this.finished) return 1
     if (!this.downloadedBlocksEstimate) return 0
     // leave 3% incase our estimatation is wrong - then at least it wont appear done...
     return Math.min(0.99, this.downloadedBlocks / this.downloadedBlocksEstimate)
   }
 
-  monitor (opts) {
+  monitor(opts) {
     this.includeProgress = true
     if (this.downloadSpeed === null) this.downloadSpeed = speedometer()
     if (this.uploadSpeed === null) this.uploadSpeed = speedometer()
     return new Monitor(this, opts)
   }
 
-  async done () {
+  async done() {
     while (true) {
       const { done } = await this.iterator.next()
       if (done) break
     }
   }
 
-  _onupload (index, byteLength) {
+  _onupload(index, byteLength) {
     this.uploadedBlocks++
     this.uploadedBytes += byteLength
     this.uploadSpeed(byteLength)
   }
 
-  _ondownload (index, byteLength) {
+  _ondownload(index, byteLength) {
     this.downloadedBlocks++
     this.downloadedBytes += byteLength
     this.downloadSpeed(byteLength)
   }
 
-  async _flushPreload (entries) {
+  async _flushPreload(entries) {
     const ranges = []
     const blobs = await this.src.getBlobs()
 
@@ -151,7 +151,7 @@ module.exports = class MirrorDrive {
     this.downloadedBlocksEstimate = this.downloadedBlocks
     for (const dl of ranges) {
       if (!dl.request.context) continue
-      this.downloadedBlocksEstimate += (dl.request.context.end - dl.request.context.start)
+      this.downloadedBlocksEstimate += dl.request.context.end - dl.request.context.start
     }
 
     for (const dl of ranges) {
@@ -159,7 +159,7 @@ module.exports = class MirrorDrive {
     }
   }
 
-  async * _init () {
+  async *_init() {
     try {
       for await (const out of this._mirror()) yield out
     } finally {
@@ -169,7 +169,7 @@ module.exports = class MirrorDrive {
     }
   }
 
-  async * _mirror () {
+  async *_mirror() {
     await this.src.ready()
     await this.dst.ready()
 
@@ -217,7 +217,7 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const isSame = hasTransformers === false && await same(this, srcEntry, dstEntry)
+      const isSame = hasTransformers === false && (await same(this, srcEntry, dstEntry))
 
       if (isSame) {
         if (this.includeEquals) {
@@ -230,7 +230,12 @@ module.exports = class MirrorDrive {
         this.count.change++
         this.bytesRemoved += blobLength(dstEntry)
         this.bytesAdded += blobLength(srcEntry)
-        yield { op: 'change', key, bytesRemoved: blobLength(dstEntry), bytesAdded: blobLength(srcEntry) }
+        yield {
+          op: 'change',
+          key,
+          bytesRemoved: blobLength(dstEntry),
+          bytesAdded: blobLength(srcEntry)
+        }
       } else {
         this.count.add++
         this.bytesAdded += blobLength(srcEntry)
@@ -260,7 +265,10 @@ module.exports = class MirrorDrive {
         await pipelinePromise(
           this.src.createReadStream(srcEntry),
           ...transformers,
-          dst.createWriteStream(key, { executable: srcEntry.value.executable, metadata: srcEntry.value.metadata })
+          dst.createWriteStream(key, {
+            executable: srcEntry.value.executable,
+            metadata: srcEntry.value.metadata
+          })
         )
       }
     }
@@ -275,7 +283,7 @@ module.exports = class MirrorDrive {
     this.finished = true
   }
 
-  async * _list (a, b, filter) {
+  async *_list(a, b, filter) {
     for (const prefix of this.prefix) {
       const list = this.entries || a.list(prefix, { ignore: this.ignore })
 
@@ -302,11 +310,11 @@ module.exports = class MirrorDrive {
   }
 }
 
-function blobLength (entry) {
+function blobLength(entry) {
   return entry.value.blob ? entry.value.blob.byteLength : 0
 }
 
-async function same (m, srcEntry, dstEntry) {
+async function same(m, srcEntry, dstEntry) {
   if (!dstEntry) return false
 
   if (srcEntry.value.linkname || dstEntry.value.linkname) {
@@ -322,7 +330,7 @@ async function same (m, srcEntry, dstEntry) {
   return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
 }
 
-function sizeEquals (srcEntry, dstEntry) {
+function sizeEquals(srcEntry, dstEntry) {
   const srcBlob = srcEntry.value.blob
   const dstBlob = dstEntry.value.blob
 
@@ -332,7 +340,7 @@ function sizeEquals (srcEntry, dstEntry) {
   return srcBlob.byteLength === dstBlob.byteLength
 }
 
-function metadataEquals (m, srcEntry, dstEntry) {
+function metadataEquals(m, srcEntry, dstEntry) {
   if (!m.src.supportsMetadata || !m.dst.supportsMetadata) return true
 
   const srcMetadata = srcEntry.value.metadata
@@ -348,15 +356,15 @@ function metadataEquals (m, srcEntry, dstEntry) {
   return noMetadata || identicalMetadata
 }
 
-function toIgnoreFunction (ignore) {
+function toIgnoreFunction(ignore) {
   if (typeof ignore === 'function') return ignore
 
-  const all = [].concat(ignore).map(e => unixPathResolve('/', e))
-  return key => all.some(path => path === key || key.startsWith(path + '/'))
+  const all = [].concat(ignore).map((e) => unixPathResolve('/', e))
+  return (key) => all.some((path) => path === key || key.startsWith(path + '/'))
 }
 
-function toArray (prefix) {
+function toArray(prefix) {
   return Array.isArray(prefix) ? prefix : [prefix]
 }
 
-function noop () {}
+function noop() {}

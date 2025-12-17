@@ -1,0 +1,31 @@
+name: Integrate
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - uses: holepunchto/actions/node-base@v1
+      - run: npm run lint
+  test-node:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: Test (Node.js / ${{ matrix.os }})
+    steps:
+      - uses: holepunchto/actions/node-base@v1
+      - run: npm run test:node
+  test-bare:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    name: Test (Bare / ${{ matrix.os }})
+    steps:
+      - uses: holepunchto/actions/bare-base@v1
+      - run: npm run test:bare
