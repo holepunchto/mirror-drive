@@ -10,7 +10,9 @@ test('basic filter - local to hyper', async function (t) {
   await addFolders(local)
   await addFolders(hyper)
 
-  const m = new MirrorDrive(local, hyper, { filter: key => key === '/tmp.txt' || key === '/buffer.txt' })
+  const m = new MirrorDrive(local, hyper, {
+    filter: (key) => key === '/tmp.txt' || key === '/buffer.txt'
+  })
   const diffs = await toArray(m)
   t.is(diffs.length, 2)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
@@ -24,7 +26,9 @@ test('basic filter - hyper to local', async function (t) {
   await addFolders(local)
   await addFolders(hyper)
 
-  const m = new MirrorDrive(hyper, local, { filter: key => key === '/tmp.txt' || key === '/buffer.txt' })
+  const m = new MirrorDrive(hyper, local, {
+    filter: (key) => key === '/tmp.txt' || key === '/buffer.txt'
+  })
   const diffs = await toArray(m)
   t.is(diffs.length, 2)
   t.alike(diffs[0], { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 })
@@ -39,11 +43,17 @@ test('filter - local to hyper', async function (t) {
 
   const actual = []
   const expected = [
-    '/examples/a.txt', '/examples/b.txt',
-    '/examples/sub/a.txt', '/examples/sub/b.txt',
-    '/examples/sub/sub2/sub3/b.txt', '/examples/sub/sub2/sub3/a.txt',
-    '/equal.txt', '/buffer.txt',
-    '/equal-meta.txt', '/meta.txt', '/add-meta.txt',
+    '/examples/a.txt',
+    '/examples/b.txt',
+    '/examples/sub/a.txt',
+    '/examples/sub/b.txt',
+    '/examples/sub/sub2/sub3/b.txt',
+    '/examples/sub/sub2/sub3/a.txt',
+    '/equal.txt',
+    '/buffer.txt',
+    '/equal-meta.txt',
+    '/meta.txt',
+    '/add-meta.txt',
     '/tmp.txt'
   ]
 
@@ -53,7 +63,7 @@ test('filter - local to hyper', async function (t) {
 
   t.alike(actual.sort(), expected.sort())
 
-  function onfilter (key) {
+  function onfilter(key) {
     actual.push(key)
     return true
   }
@@ -67,11 +77,17 @@ test('filter - hyper to local', async function (t) {
 
   const actual = []
   const expected = [
-    '/examples/a.txt', '/examples/b.txt',
-    '/examples/sub/a.txt', '/examples/sub/b.txt',
-    '/examples/sub/sub2/sub3/b.txt', '/examples/sub/sub2/sub3/a.txt',
-    '/equal.txt', '/buffer.txt',
-    '/equal-meta.txt', '/meta.txt', '/add-meta.txt',
+    '/examples/a.txt',
+    '/examples/b.txt',
+    '/examples/sub/a.txt',
+    '/examples/sub/b.txt',
+    '/examples/sub/sub2/sub3/b.txt',
+    '/examples/sub/sub2/sub3/a.txt',
+    '/equal.txt',
+    '/buffer.txt',
+    '/equal-meta.txt',
+    '/meta.txt',
+    '/add-meta.txt',
     '/tmp.txt'
   ]
 
@@ -81,13 +97,13 @@ test('filter - hyper to local', async function (t) {
 
   t.alike([...new Set(actual)].sort(), expected.sort())
 
-  function onfilter (key) {
+  function onfilter(key) {
     actual.push(key)
     return true
   }
 })
 
-async function addFolders (drive) {
+async function addFolders(drive) {
   await drive.put('/examples/a.txt', b4a.from('same'))
   await drive.put('/examples/b.txt', b4a.from('same'))
 

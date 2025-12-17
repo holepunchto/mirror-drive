@@ -60,7 +60,7 @@ test('prune disabled', async function (t) {
   const { local, hyper } = await createDrives(t)
 
   const actual = []
-  const expected = (await changeDrive(local)).filter(exp => exp.op !== 'remove')
+  const expected = (await changeDrive(local)).filter((exp) => exp.op !== 'remove')
 
   const m = new MirrorDrive(local, hyper, { prune: false, includeEquals: true })
   t.alike(m.count, { files: 0, add: 0, remove: 0, change: 0 })
@@ -103,7 +103,7 @@ test('mirror with entries option', async function (t) {
 
   const entries = ['/tmp.txt', '/buffer.txt', '/equal.txt', '/new.txt']
   const actual = []
-  const expected = (await changeDrive(local)).filter(v => entries.indexOf(v.key) > -1)
+  const expected = (await changeDrive(local)).filter((v) => entries.indexOf(v.key) > -1)
 
   const m = new MirrorDrive(local, hyper, { includeEquals: true, entries })
 
@@ -143,7 +143,9 @@ test('mirror localdrive into hyperdrive with ignores', async function (t) {
   await local.put('/folder/file.txt', b4a.from('same'))
   await local.put('/folder/subfolder/file.txt', b4a.from('same'))
 
-  const m = new MirrorDrive(local, hyper, { ignore: ['/equal.txt', 'tmp.txt', '/folder/subfolder'] })
+  const m = new MirrorDrive(local, hyper, {
+    ignore: ['/equal.txt', 'tmp.txt', '/folder/subfolder']
+  })
   await m.done()
 
   t.is(await hyper.get('/equal.txt'), null)
@@ -162,7 +164,7 @@ test('mirror localdrive into hyperdrive with ignore and unignore function', asyn
   await local.put('/folder/subfolder/otherfile.txt', b4a.from('same'))
   const ignores = ['/equal.txt', 'tmp.txt', '/folder/subfolder']
   const unignores = ['/folder/subfolder/otherfile.txt']
-  function ignore (key) {
+  function ignore(key) {
     for (const u of unignores) {
       const path = unixPathResolve('/', u)
       if (path === key) return false

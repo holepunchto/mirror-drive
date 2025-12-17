@@ -5,9 +5,9 @@ const { createDrives, toArray } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
 
-function upperTransform () {
+function upperTransform() {
   return new Transform({
-    transform (chunk, cb) {
+    transform(chunk, cb) {
       this.push(b4a.from(String(chunk).toUpperCase()))
       cb(null)
     }
@@ -22,7 +22,12 @@ test('transformers: uppercase .txt files, always writes on rerun', async functio
   await src.put('/notes.txt', b4a.from('hello world'))
 
   const seen = new Set()
-  const transformers = [(key) => { seen.add(key); return upperTransform() }]
+  const transformers = [
+    (key) => {
+      seen.add(key)
+      return upperTransform()
+    }
+  ]
 
   const m1 = new MirrorDrive(src, dst, { transformers })
   await m1.done()
@@ -37,17 +42,20 @@ test('transformers: uppercase .txt files, always writes on rerun', async functio
   t.ok(seen.has('/notes.txt'), 'factory saw /notes.txt')
 
   // Second run should produce only equals
-  const m2 = new MirrorDrive(src, dst, { transformers: [(key) => upperTransform()], includeEquals: true })
+  const m2 = new MirrorDrive(src, dst, {
+    transformers: [(key) => upperTransform()],
+    includeEquals: true
+  })
   const diffs = await toArray(m2)
 
   t.ok(diffs.length > 0, 'emitted some diffs')
   for (const d of diffs) t.is(d.op, 'change')
 })
 
-function errorTransform () {
+function errorTransform() {
   let done = false
   return new Transform({
-    transform (chunk, cb) {
+    transform(chunk, cb) {
       if (!done) {
         done = true
         cb(new Error('transform boom'))
@@ -93,9 +101,9 @@ test('transformers: length-changing transform writes on rerun', async function (
   const { local: dst } = await createDrives(t, { setup: false })
 
   // Increase length by appending fruit to every chunk
-  function fruitSaladTransform () {
+  function fruitSaladTransform() {
     return new Transform({
-      transform (chunk, cb) {
+      transform(chunk, cb) {
         this.push(b4a.concat([chunk, b4a.from('🍐')]))
         cb(null)
       }
@@ -148,7 +156,7 @@ test('transforms + symlink: creates symlink and rerun yields change', async func
   const m2 = new MirrorDrive(src, dst, { transformers, includeEquals: true })
   const diffs = await toArray(m2)
 
-  const linkDiff = diffs.find(d => d.key === '/link.shortcut')
+  const linkDiff = diffs.find((d) => d.key === '/link.shortcut')
   t.ok(linkDiff, 'emitted a diff for the symlink')
   t.is(linkDiff.op, 'change')
   t.is(linkDiff.bytesRemoved, 0)
@@ -180,9 +188,9 @@ test('transforms: node stream Transform works', async function (t) {
   const { local: src } = await createDrives(t)
   const { local: dst } = await createDrives(t, { setup: false })
 
-  function nodeUpperTransform () {
+  function nodeUpperTransform() {
     return new NodeTransform({
-      transform (chunk, _enc, cb) {
+      transform(chunk, _enc, cb) {
         cb(null, b4a.from(String(chunk).toUpperCase()))
       }
     })
