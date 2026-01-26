@@ -17,6 +17,10 @@ class Monitor extends EventEmitter {
     this.update() // populate latest stats
   }
 
+  get preloaded() {
+    return this.mirror.preloaded
+  }
+
   get destroyed() {
     return this.index === -1
   }
@@ -68,6 +72,7 @@ module.exports = class MirrorDrive {
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune !== false
     this.preload = opts.preload !== false && !!src.getBlobs
+    this.preloaded = false
     this.includeProgress = !!opts.progress && !!src.getBlobs
     this.includeEquals = !!opts.includeEquals
     this.filter = opts.filter || null
@@ -152,6 +157,11 @@ module.exports = class MirrorDrive {
     for (const dl of ranges) {
       if (!dl.request.context) continue
       this.downloadedBlocksEstimate += dl.request.context.end - dl.request.context.start
+    }
+    this.preloaded = true
+    for (const m of this.monitors) {
+      m.preloaded = true
+      m.emit('preloaded')
     }
 
     for (const dl of ranges) {
@@ -284,8 +294,25 @@ module.exports = class MirrorDrive {
   }
 
   async *_list(a, b, filter) {
+    const lists = []
+
     for (const prefix of this.prefix) {
-      const list = this.entries || a.list(prefix, { ignore: this.ignore })
+      if (this.entries) {
+        lists.push(this.entries)
+      } else {
+        const stream = a.list(prefix, { ignore: this.ignore })
+        if (stream.on) {
+          stream.on('error', noop)
+          stream.resume()
+          stream.pause()
+        }
+        lists.push(stream)
+      }
+    }
+
+    for (let i = 0; i < this.prefix.length; i++) {
+      const prefix = this.prefix[i]
+      const list = lists[i]
 
       for await (const entry of list) {
         const key = typeof entry === 'object' ? entry.key : entry
