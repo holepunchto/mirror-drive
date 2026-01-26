@@ -160,7 +160,6 @@ module.exports = class MirrorDrive {
     }
     this.preloaded = true
     for (const m of this.monitors) {
-      m.preloaded = true
       m.emit('preloaded')
     }
 
