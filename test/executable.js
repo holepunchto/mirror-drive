@@ -38,11 +38,11 @@ test('executable change', { skip: isWin }, async function (t) {
   t.is(m.bytesAdded, 0)
   const diffs = await toArray(m)
   t.alike(m.count, { files: 7, add: 0, remove: 0, change: 1 })
-  t.is(m.bytesRemoved, 6)
-  t.is(m.bytesAdded, 6)
+  t.is(m.bytesRemoved, 0)
+  t.is(m.bytesAdded, 0)
 
   t.is(diffs.length, 1)
-  t.alike(diffs[0], { op: 'change', key: '/script.sh', bytesRemoved: 6, bytesAdded: 6 })
+  t.alike(diffs[0], { op: 'change', key: '/script.sh', bytesRemoved: 0, bytesAdded: 0 })
 
   t.alike((await hyper.entry('/script.sh')).value.executable, false)
 })

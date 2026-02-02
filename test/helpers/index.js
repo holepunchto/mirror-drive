@@ -52,11 +52,11 @@ async function changeDrive(drive) {
 
   return [
     { op: 'remove', key: '/tmp.txt', bytesRemoved: 4, bytesAdded: 0 },
-    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'change', key: '/add-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
     { op: 'change', key: '/buffer.txt', bytesRemoved: 4, bytesAdded: 4 },
     { op: 'equal', key: '/equal-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
     { op: 'equal', key: '/equal.txt', bytesRemoved: 0, bytesAdded: 0 },
-    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 },
+    { op: 'change', key: '/meta.txt', bytesRemoved: 0, bytesAdded: 0 },
     { op: 'add', key: '/new.txt', bytesRemoved: 0, bytesAdded: 3 }
   ]
 }

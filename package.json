@@ -43,7 +43,7 @@
     "bare-stream": "^2.6.5",
     "brittle": "^3.1.0",
     "corestore": "^6.0.6",
-    "hyperdrive": "^12.2.0",
+    "hyperdrive": "^13.0.0",
     "localdrive": "^2.2.0",
     "lunte": "^1.0.0",
     "prettier": "^3.6.2",

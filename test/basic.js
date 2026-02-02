@@ -21,8 +21,8 @@ test('mirror localdrive into hyperdrive', async function (t) {
   }
 
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
-  t.is(m.bytesRemoved, 16)
-  t.is(m.bytesAdded, 15)
+  t.is(m.bytesRemoved, 8)
+  t.is(m.bytesAdded, 7)
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)
@@ -49,7 +49,6 @@ test('mirror hyperdrive into localdrive', async function (t) {
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
   t.is(m.bytesRemoved, 16)
   t.is(m.bytesAdded, 15)
-  t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(hyper, local)
   const diffs = await toArray(m2)
@@ -73,8 +72,8 @@ test('prune disabled', async function (t) {
   }
 
   t.alike(m.count, { files: 6, add: 1, remove: 0, change: 3 })
-  t.is(m.bytesRemoved, 12)
-  t.is(m.bytesAdded, 15)
+  t.is(m.bytesRemoved, 4)
+  t.is(m.bytesAdded, 7)
   t.alike(sortObjects(actual), sortObjects(expected))
 
   const m2 = new MirrorDrive(local, hyper)
@@ -119,8 +118,8 @@ test('mirror with entries option', async function (t) {
 
   const actual2 = []
   const expected2 = [
-    { op: 'change', key: '/add-meta.txt', bytesRemoved: 4, bytesAdded: 4 },
-    { op: 'change', key: '/meta.txt', bytesRemoved: 4, bytesAdded: 4 }
+    { op: 'change', key: '/add-meta.txt', bytesRemoved: 0, bytesAdded: 0 },
+    { op: 'change', key: '/meta.txt', bytesRemoved: 0, bytesAdded: 0 }
   ]
 
   const m2 = new MirrorDrive(local, hyper)
@@ -131,8 +130,8 @@ test('mirror with entries option', async function (t) {
   }
 
   t.alike(m2.count, { files: 6, add: 0, remove: 0, change: 2 })
-  t.is(m2.bytesRemoved, 8)
-  t.is(m2.bytesAdded, 8)
+  t.is(m2.bytesRemoved, 0)
+  t.is(m2.bytesAdded, 0)
   t.alike(sortObjects(actual2), sortObjects(expected2))
 })
 

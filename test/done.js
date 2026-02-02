@@ -13,8 +13,8 @@ test('done()', async function (t) {
   t.is(m.bytesAdded, 0)
   await m.done()
   t.alike(m.count, { files: 6, add: 1, remove: 1, change: 3 })
-  t.is(m.bytesRemoved, 16)
-  t.is(m.bytesAdded, 15)
+  t.is(m.bytesRemoved, 8)
+  t.is(m.bytesAdded, 7)
 
   const m2 = new MirrorDrive(local, hyper)
   const diffs = await toArray(m2)

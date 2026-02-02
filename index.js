@@ -5,6 +5,10 @@ const streamEquals = require('binary-stream-equals')
 const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
 
+const SAME = 0
+const DIFF = 1
+const DIFF_META = 2
+
 class Monitor extends EventEmitter {
   constructor(mirror, { interval = 250 } = {}) {
     super()
@@ -226,24 +230,28 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const isSame = hasTransformers === false && (await same(this, srcEntry, dstEntry))
+      const s = hasTransformers === false ? (await same(this, srcEntry, dstEntry)) : DIFF
 
-      if (isSame) {
+      if (s === SAME) {
         if (this.includeEquals) {
           yield { op: 'equal', key, bytesRemoved: 0, bytesAdded: 0 }
         }
         continue
       }
 
+      const onlyMetadata = s === DIFF_META && !!dst.putEntry
+
       if (dstEntry) {
+        const removed = onlyMetadata ? 0 : blobLength(dstEntry)
+        const added = onlyMetadata ? 0 : blobLength(srcEntry)
         this.count.change++
-        this.bytesRemoved += blobLength(dstEntry)
-        this.bytesAdded += blobLength(srcEntry)
+        this.bytesRemoved += removed
+        this.bytesAdded += added
         yield {
           op: 'change',
           key,
-          bytesRemoved: blobLength(dstEntry),
-          bytesAdded: blobLength(srcEntry)
+          bytesRemoved: removed,
+          bytesAdded: added
         }
       } else {
         this.count.add++
@@ -270,7 +278,7 @@ module.exports = class MirrorDrive {
 
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
-      } else {
+      } else if (!onlyMetadata) {
         await pipelinePromise(
           this.src.createReadStream(srcEntry),
           ...transformers,
@@ -279,6 +287,13 @@ module.exports = class MirrorDrive {
             metadata: srcEntry.value.metadata
           })
         )
+      } else {
+        await dst.putEntry(key, {
+          executable: srcEntry.value.executable,
+          linkname: srcEntry.value.linkname,
+          blob: dstEntry.value.blob,
+          metadata: srcEntry.value.metadata
+        })
       }
     }
 
@@ -341,19 +356,21 @@ function blobLength(entry) {
 }
 
 async function same(m, srcEntry, dstEntry) {
-  if (!dstEntry) return false
+  if (!dstEntry) return DIFF
 
   if (srcEntry.value.linkname || dstEntry.value.linkname) {
-    return srcEntry.value.linkname === dstEntry.value.linkname
+    return srcEntry.value.linkname === dstEntry.value.linkname ? SAME : DIFF
   }
 
-  if (srcEntry.value.executable !== dstEntry.value.executable) return false
+  if (!sizeEquals(srcEntry, dstEntry)) return DIFF
 
-  if (!sizeEquals(srcEntry, dstEntry)) return false
+  const eq = await streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
+  const diff = eq ? DIFF_META : DIFF
 
-  if (!metadataEquals(m, srcEntry, dstEntry)) return false
+  if (srcEntry.value.executable !== dstEntry.value.executable) return diff
+  if (!metadataEquals(m, srcEntry, dstEntry)) return diff
 
-  return streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
+  return eq ? SAME : DIFF
 }
 
 function sizeEquals(srcEntry, dstEntry) {
