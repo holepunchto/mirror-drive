@@ -49,7 +49,7 @@ Available `options`:
 
 ```js
 {
-  prefix: '/',
+  prefix: '/', // may be { from, to }, may be array [...prefixes]
   dryRun: false,
   prune: true,
   includeEquals: false,
