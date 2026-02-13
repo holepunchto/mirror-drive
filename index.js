@@ -230,7 +230,7 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const s = hasTransformers === false ? (await same(this, srcEntry, dstEntry)) : DIFF
+      const s = hasTransformers === false ? await same(this, srcEntry, dstEntry) : DIFF
 
       if (s === SAME) {
         if (this.includeEquals) {
@@ -309,43 +309,90 @@ module.exports = class MirrorDrive {
 
   async *_list(a, b, filter) {
     const lists = []
+    const isSrcSide = a === this.src
 
     for (const prefix of this.prefix) {
-      if (this.entries) {
+      if (isSrcSide && this.entries) {
         lists.push(this.entries)
-      } else {
-        const stream = a.list(prefix, { ignore: this.ignore })
-        if (stream.on) {
-          stream.on('error', noop)
-          stream.resume()
-          stream.pause()
-        }
-        lists.push(stream)
+        continue
       }
+
+      const from = prefix?.from ?? prefix
+      const to = prefix?.to ?? prefix
+      const base = isSrcSide ? from : to
+
+      const stream = a.list(base, { ignore: this.ignore })
+      if (stream.on) {
+        stream.on('error', noop)
+        stream.resume()
+        stream.pause()
+      }
+      lists.push(stream)
     }
 
     for (let i = 0; i < this.prefix.length; i++) {
       const prefix = this.prefix[i]
+      const from = prefix?.from ?? prefix
+      const to = prefix?.to ?? prefix
       const list = lists[i]
 
       for await (const entry of list) {
-        const key = typeof entry === 'object' ? entry.key : entry
+        const listedKey = typeof entry === 'object' ? entry.key : entry
 
-        if (filter && !filter(key)) continue
+        if (isSrcSide) {
+          if (filter && !filter(listedKey)) continue
 
-        const entryA = await a.entry(entry)
-        const entryB = b ? await b.entry(key) : null
+          const key =
+            listedKey === from
+              ? to
+              : from === '/'
+                ? listedKey[0] === '/'
+                  ? to + listedKey.slice(1)
+                  : listedKey
+                : listedKey.startsWith(from + '/')
+                  ? to + listedKey.slice(from.length)
+                  : listedKey
 
-        yield [key, entryA, entryB]
+          const entryA = await a.entry(entry)
+          const entryB = b ? await b.entry(key) : null
+          yield [key, entryA, entryB]
+        } else {
+          const key = listedKey
+          const entryA = await a.entry(entry)
+
+          const srcKey =
+            key === to
+              ? from
+              : to === '/'
+                ? key[0] === '/'
+                  ? from + key.slice(1)
+                  : null
+                : key.startsWith(to + '/')
+                  ? from + key.slice(to.length)
+                  : null
+
+          const entryB = srcKey && b ? await b.entry(srcKey) : null
+          yield [key, entryA, entryB]
+        }
       }
 
-      if (prefix !== '/' && (!filter || filter(prefix))) {
-        const entryA = await a.entry(prefix)
-        const entryB = b ? await b.entry(prefix) : null
+      const base = isSrcSide ? from : to
 
-        if (!entryA && !entryB) continue
+      if (base !== '/' && (!filter || !isSrcSide || filter(from))) {
+        const entryA = await a.entry(base)
 
-        yield [prefix, entryA, entryB]
+        if (isSrcSide) {
+          const key = to
+          const entryB = b ? await b.entry(key) : null
+          if (!entryA && !entryB) continue
+          yield [key, entryA, entryB]
+        } else {
+          const key = to
+          const srcKey = from
+          const entryB = b ? await b.entry(srcKey) : null
+          if (!entryA && !entryB) continue
+          yield [key, entryA, entryB]
+        }
       }
     }
   }
