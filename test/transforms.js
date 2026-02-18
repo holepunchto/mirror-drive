@@ -52,6 +52,18 @@ test('transformers: uppercase .txt files, always writes on rerun', async functio
   for (const d of diffs) t.is(d.op, 'change')
 })
 
+test('transforms: simple dedup', async function (t) {
+  const { local: src } = await createDrives(t)
+  const { local: dst } = await createDrives(t, { setup: false })
+
+  await src.put('/notes.txt', b4a.from('hello world'))
+
+  const m1 = new MirrorDrive(src, dst, { dedup: true })
+  await m1.done()
+
+  t.pass('did not blow up')
+})
+
 function errorTransform() {
   let done = false
   return new Transform({

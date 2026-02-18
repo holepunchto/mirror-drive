@@ -52,6 +52,7 @@
   "dependencies": {
     "bare-events": "^2.8.2",
     "binary-stream-equals": "^1.0.0",
+    "rabin-stream": "^2.0.0",
     "same-data": "^1.0.0",
     "speedometer": "^1.1.0",
     "streamx": "^2.22.1",

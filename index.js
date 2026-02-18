@@ -4,6 +4,7 @@ const unixPathResolve = require('unix-path-resolve')
 const streamEquals = require('binary-stream-equals')
 const speedometer = require('speedometer')
 const { pipelinePromise, isStream } = require('streamx')
+const RabinStream = require('rabin-stream')
 
 const SAME = 0
 const DIFF = 1
@@ -73,6 +74,7 @@ module.exports = class MirrorDrive {
     this.dst = dst
 
     this.prefix = toArray(opts.prefix || '/')
+    this.dedup = !!opts.dedup
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune !== false
     this.preload = opts.preload !== false && !!src.getBlobs
@@ -279,10 +281,12 @@ module.exports = class MirrorDrive {
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else if (!onlyMetadata) {
+        if (this.dedup) transformers.push(new RabinStream())
         await pipelinePromise(
           this.src.createReadStream(srcEntry),
           ...transformers,
           dst.createWriteStream(key, {
+            dedup: this.dedup,
             executable: srcEntry.value.executable,
             metadata: srcEntry.value.metadata
           })
