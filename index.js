@@ -232,7 +232,7 @@ module.exports = class MirrorDrive {
       // If transformers are provided, we can't know if same before running them
       const hasTransformers = this.transformers && this.transformers.length > 0
 
-      const s = hasTransformers === false ? (await same(this, srcEntry, dstEntry)) : DIFF
+      const s = hasTransformers === false ? await same(this, srcEntry, dstEntry) : DIFF
 
       if (s === SAME) {
         if (this.includeEquals) {
