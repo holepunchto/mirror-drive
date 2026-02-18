@@ -242,6 +242,7 @@ module.exports = class MirrorDrive {
       }
 
       const onlyMetadata = s === DIFF_META && !!dst.putEntry
+      const dedup = !!dst.putEntry && this.dedup
 
       if (dstEntry) {
         const removed = onlyMetadata ? 0 : blobLength(dstEntry)
@@ -281,12 +282,12 @@ module.exports = class MirrorDrive {
       if (srcEntry.value.linkname) {
         await dst.symlink(key, srcEntry.value.linkname)
       } else if (!onlyMetadata) {
-        if (this.dedup) transformers.push(new RabinStream())
+        if (dedup) transformers.push(new RabinStream())
         await pipelinePromise(
           this.src.createReadStream(srcEntry),
           ...transformers,
           dst.createWriteStream(key, {
-            dedup: this.dedup,
+            dedup,
             executable: srcEntry.value.executable,
             metadata: srcEntry.value.metadata
           })
