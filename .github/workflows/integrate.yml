@@ -14,6 +14,7 @@ jobs:
   test-node:
     strategy:
       matrix:
+        fail-fast: false
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     name: Test (Node.js / ${{ matrix.os }})
@@ -23,6 +24,7 @@ jobs:
   test-bare:
     strategy:
       matrix:
+        fail-fast: false
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     name: Test (Bare / ${{ matrix.os }})
