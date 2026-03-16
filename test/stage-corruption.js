@@ -4,7 +4,7 @@ const MirrorDrive = require('../')
 const LocalDrive = require('localdrive')
 const test = require('brittle')
 
-test('stage with 11 files', async function (t) {
+test.solo('stage with 11 files', async function (t) {
   const platformCorestore = new Corestore(await t.tmp(), {
     manifestVersion: 1,
     compat: false,
@@ -65,7 +65,7 @@ test('stage with 11 files', async function (t) {
   }
 })
 
-test('stage with 12 files', async function (t) {
+test.solo('stage with 12 files', async function (t) {
   const platformCorestore = new Corestore(await t.tmp(), {
     manifestVersion: 1,
     compat: false,
