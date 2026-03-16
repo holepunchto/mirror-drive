@@ -35,7 +35,7 @@ test('stage with 11 files', async function (t) {
     const mirror = new MirrorDrive(src, drive, { dedup: true, batch: true })
     try {
       let mirrorCount = 0
-      for await (const diff of mirror) {
+      for await (const _diff of mirror) {
         if (mirrorCount++ === 2) {
           t.comment('closing drive during mirror')
           await drive.close()
@@ -96,7 +96,7 @@ test('stage with 12 files', async function (t) {
     const mirror = new MirrorDrive(src, drive, { dedup: true, batch: true })
     try {
       let mirrorCount = 0
-      for await (const diff of mirror) {
+      for await (const _diff of mirror) {
         if (mirrorCount++ === 2) {
           t.comment('closing drive during mirror')
           await drive.close()
