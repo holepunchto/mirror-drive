@@ -42,7 +42,7 @@
     "bare-os": "^3.0.1",
     "bare-stream": "^2.6.5",
     "brittle": "^3.1.0",
-    "corestore": "^7.9.1",
+    "corestore": "^7.0.14",
     "hyperdrive": "^13.0.0",
     "localdrive": "^2.2.0",
     "lunte": "^1.0.0",
