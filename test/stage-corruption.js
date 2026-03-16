@@ -33,14 +33,18 @@ test('stage with 11 files', async function (t) {
 
     t.comment('mirroring')
     const mirror = new MirrorDrive(src, drive, { dedup: true, batch: true })
-    let mirrorCount = 0
-    for await (const diff of mirror) {
-      if (mirrorCount++ === 2) {
-        t.comment('closing drive during mirror')
-        await drive.close()
+    try {
+      let mirrorCount = 0
+      for await (const diff of mirror) {
+        if (mirrorCount++ === 2) {
+          t.comment('closing drive during mirror')
+          await drive.close()
+        }
       }
+      t.fail('should error when writing to a closed drive')
+    } catch (err) {
+      t.ok(err.message.includes('Closed'), 'should error when the drive gets closed')
     }
-
     await corestore.close()
   }
 
@@ -90,12 +94,17 @@ test('stage with 12 files', async function (t) {
 
     t.comment('mirroring')
     const mirror = new MirrorDrive(src, drive, { dedup: true, batch: true })
-    let mirrorCount = 0
-    for await (const diff of mirror) {
-      if (mirrorCount++ === 2) {
-        t.comment('closing drive during mirror')
-        await drive.close()
+    try {
+      let mirrorCount = 0
+      for await (const diff of mirror) {
+        if (mirrorCount++ === 2) {
+          t.comment('closing drive during mirror')
+          await drive.close()
+        }
       }
+      t.fail('should error when writing to a closed drive')
+    } catch (err) {
+      t.ok(err.message.includes('Closed'), 'should error when the drive gets closed')
     }
 
     await corestore.close()
