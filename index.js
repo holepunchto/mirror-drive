@@ -367,7 +367,10 @@ async function same(m, srcEntry, dstEntry) {
     return srcEntry.value.linkname === dstEntry.value.linkname ? SAME : DIFF
   }
 
-  if (!sizeEquals(srcEntry, dstEntry)) return DIFF
+  const dstIsDedup = !!dstEntry.value.blob.blockMap
+  const srcIsDedup = !!srcEntry.value.blob.blockMap
+
+  if (!dstIsDedup && !srcIsDedup && !sizeEquals(srcEntry, dstEntry)) return DIFF
 
   const eq = await streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
   const diff = eq ? DIFF_META : DIFF
