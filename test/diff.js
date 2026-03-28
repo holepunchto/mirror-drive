@@ -112,3 +112,71 @@ test('change metadata', async function (t) {
 
   t.alike((await hyper.entry('/meta.txt')).value.metadata, 'edit')
 })
+
+test('dedup: localdrive -> hyperdrive', async function (t) {
+  const { local, hyper } = await createDrives(t, {}, { setup: false })
+  const content = b4a.from('same content')
+  await local.put('/file.txt', content)
+  await new MirrorDrive(local, hyper, { dedup: true }).done()
+  const diffs = await toArray(new MirrorDrive(local, hyper))
+  t.is(diffs.length, 0)
+})
+
+test('dedup: hyperdrive -> localdrive', async function (t) {
+  const { local, hyper } = await createDrives(t, {}, { setup: false })
+  const content = b4a.from('same content')
+  await local.put('/file.txt', content)
+  await new MirrorDrive(local, hyper, { dedup: true }).done()
+  const diffs = await toArray(new MirrorDrive(hyper, local))
+  t.is(diffs.length, 0)
+})
+
+test('dedup: hyperdrive (dedup) -> hyperdrive (dedup)', async function (t) {
+  const { local, hyper: src } = await createDrives(t, {}, { setup: false })
+  const { hyper: dst } = await createDrives(t, {}, { setup: false })
+  const content = b4a.from('same content')
+  await local.put('/file.txt', content)
+  await new MirrorDrive(local, src, { dedup: true }).done()
+  await new MirrorDrive(local, dst, { dedup: true }).done()
+  const diffs = await toArray(new MirrorDrive(src, dst))
+  t.is(diffs.length, 0)
+})
+
+test('dedup: hyperdrive (dedup) -> hyperdrive (no dedup)', async function (t) {
+  const { local, hyper: src } = await createDrives(t, {}, { setup: false })
+  const { hyper: dst } = await createDrives(t, {}, { setup: false })
+  const content = b4a.from('same content')
+  await local.put('/file.txt', content)
+  await new MirrorDrive(local, src, { dedup: true }).done()
+  await dst.put('/file.txt', content)
+  const diffs = await toArray(new MirrorDrive(src, dst))
+  t.is(diffs.length, 0)
+})
+
+test('dedup: hyperdrive (no dedup) -> hyperdrive (dedup)', async function (t) {
+  const { local, hyper: src } = await createDrives(t, {}, { setup: false })
+  const { hyper: dst } = await createDrives(t, {}, { setup: false })
+  const content = b4a.from('same content')
+  await local.put('/file.txt', content)
+  await src.put('/file.txt', content)
+  await new MirrorDrive(local, dst, { dedup: true }).done()
+  const diffs = await toArray(new MirrorDrive(src, dst))
+  t.is(diffs.length, 0)
+})
+
+test('dedup: localdrive -> hyperdrive (dedup) with changes', async function (t) {
+  const { local, hyper: src } = await createDrives(t, {}, { setup: false })
+  const { hyper: dst } = await createDrives(t, {}, { setup: false })
+  {
+    const content = b4a.from('same content')
+    await local.put('/file.txt', content)
+  }
+  await new MirrorDrive(local, src, { dedup: true }).done()
+  {
+    const content = b4a.from('same content 2')
+    await local.put('/file.txt', content)
+  }
+  const diffs = await toArray(new MirrorDrive(local, src, { dedup: true }))
+  t.is(diffs.length, 1)
+  t.alike(diffs[0], { op: 'change', key: '/file.txt', bytesAdded: 14, bytesRemoved: 12 })
+})

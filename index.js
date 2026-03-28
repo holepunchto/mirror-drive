@@ -154,7 +154,18 @@ module.exports = class MirrorDrive {
     for (const entry of entries) {
       const blob = entry.value.blob
       if (!blob) continue
-      const dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
+
+      let dl = null
+
+      if (blob.blockMap) {
+        const map = await blobs.getBlockMap(blob)
+        const blocks = []
+        for (const b of map) blocks.push(b.index)
+        dl = blobs.core.download({ blocks })
+      } else {
+        dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
+      }
+
       await dl.ready()
       ranges.push(dl)
     }
@@ -200,14 +211,18 @@ module.exports = class MirrorDrive {
     }
 
     const dst = this.batch ? this.dst.batch() : this.dst
+    const dstBlobs = dst.getBlobs ? await dst.getBlobs() : null
+    const srcBlobs = this.src.getBlobs ? await this.src.getBlobs() : null
 
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src, null)) {
         if (srcEntry) continue
 
+        const removed = await blobLength(dstEntry, dstBlobs)
+
         this.count.remove++
-        this.bytesRemoved += blobLength(dstEntry)
-        yield { op: 'remove', key, bytesRemoved: blobLength(dstEntry), bytesAdded: 0 }
+        this.bytesRemoved += removed
+        yield { op: 'remove', key, bytesRemoved: removed, bytesAdded: 0 }
 
         if (!this.dryRun) await dst.del(key)
       }
@@ -245,8 +260,8 @@ module.exports = class MirrorDrive {
       const dedup = !!dst.putEntry && this.dedup
 
       if (dstEntry) {
-        const removed = onlyMetadata ? 0 : blobLength(dstEntry)
-        const added = onlyMetadata ? 0 : blobLength(srcEntry)
+        const removed = onlyMetadata ? 0 : await blobLength(dstEntry, dstBlobs)
+        const added = onlyMetadata ? 0 : await blobLength(srcEntry, srcBlobs)
         this.count.change++
         this.bytesRemoved += removed
         this.bytesAdded += added
@@ -257,9 +272,10 @@ module.exports = class MirrorDrive {
           bytesAdded: added
         }
       } else {
+        const added = await blobLength(srcEntry, srcBlobs)
         this.count.add++
-        this.bytesAdded += blobLength(srcEntry)
-        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: blobLength(srcEntry) }
+        this.bytesAdded += added
+        yield { op: 'add', key, bytesRemoved: 0, bytesAdded: added }
       }
 
       if (this.dryRun) {
@@ -356,8 +372,11 @@ module.exports = class MirrorDrive {
   }
 }
 
-function blobLength(entry) {
-  return entry.value.blob ? entry.value.blob.byteLength : 0
+function blobLength(entry, blobs) {
+  const blob = entry.value.blob
+  if (!blob) return 0
+  if (!blob.blockMap) return blob.byteLength
+  return blobs.getByteLength(blob)
 }
 
 async function same(m, srcEntry, dstEntry) {
@@ -367,7 +386,7 @@ async function same(m, srcEntry, dstEntry) {
     return srcEntry.value.linkname === dstEntry.value.linkname ? SAME : DIFF
   }
 
-  if (!sizeEquals(srcEntry, dstEntry)) return DIFF
+  if (!maybeEquals(srcEntry, dstEntry)) return DIFF
 
   const eq = await streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
   const diff = eq ? DIFF_META : DIFF
@@ -378,12 +397,14 @@ async function same(m, srcEntry, dstEntry) {
   return eq ? SAME : DIFF
 }
 
-function sizeEquals(srcEntry, dstEntry) {
+function maybeEquals(srcEntry, dstEntry) {
   const srcBlob = srcEntry.value.blob
   const dstBlob = dstEntry.value.blob
 
   if (!srcBlob && !dstBlob) return true
   if (!srcBlob || !dstBlob) return false
+
+  if (srcBlob.blockMap || dstBlob.blockMap) return true
 
   return srcBlob.byteLength === dstBlob.byteLength
 }
