@@ -367,10 +367,7 @@ async function same(m, srcEntry, dstEntry) {
     return srcEntry.value.linkname === dstEntry.value.linkname ? SAME : DIFF
   }
 
-  const dstIsDedup = !!dstEntry.value.blob.blockMap
-  const srcIsDedup = !!srcEntry.value.blob.blockMap
-
-  if (!dstIsDedup && !srcIsDedup && !sizeEquals(srcEntry, dstEntry)) return DIFF
+  if (!maybeEquals(srcEntry, dstEntry)) return DIFF
 
   const eq = await streamEquals(m.src.createReadStream(srcEntry), m.dst.createReadStream(dstEntry))
   const diff = eq ? DIFF_META : DIFF
@@ -381,12 +378,14 @@ async function same(m, srcEntry, dstEntry) {
   return eq ? SAME : DIFF
 }
 
-function sizeEquals(srcEntry, dstEntry) {
+function maybeEquals(srcEntry, dstEntry) {
   const srcBlob = srcEntry.value.blob
   const dstBlob = dstEntry.value.blob
 
   if (!srcBlob && !dstBlob) return true
   if (!srcBlob || !dstBlob) return false
+
+  if (srcBlob.blockMap || dstBlob.blockMap) return true
 
   return srcBlob.byteLength === dstBlob.byteLength
 }
