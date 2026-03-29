@@ -147,32 +147,40 @@ module.exports = class MirrorDrive {
     this.downloadSpeed(byteLength)
   }
 
+  async _getBlobRange(blobs, entry) {
+    const blob = entry.value.blob
+    if (!blob || !blob.byteLength) return null
+
+    if (!blob.byteLength) {
+      const dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
+      await dl.ready()
+      return dl
+    }
+
+    const map = await blobs.getBlockMap(blob)
+    if (!map) return null
+
+    const blocks = []
+    for (const b of map.blocks) blocks.push(b.index)
+
+    const dl = blobs.core.download({ blocks })
+    await dl.ready()
+    return dl
+  }
+
   async _flushPreload(entries) {
-    const ranges = []
     const blobs = await this.src.getBlobs()
+    const promises = []
 
     for (const entry of entries) {
-      const blob = entry.value.blob
-      if (!blob) continue
-
-      let dl = null
-
-      if (blob.blockMap) {
-        const map = await blobs.getBlockMap(blob)
-        const blocks = []
-        for (const b of map) blocks.push(b.index)
-        dl = blobs.core.download({ blocks })
-      } else {
-        dl = blobs.core.download({ start: blob.blockOffset, length: blob.blockLength })
-      }
-
-      await dl.ready()
-      ranges.push(dl)
+      promises.push(this._getBlobRange(blobs, entry))
     }
+
+    const ranges = await Promise.all(promises)
 
     this.downloadedBlocksEstimate = this.downloadedBlocks
     for (const dl of ranges) {
-      if (!dl.request.context) continue
+      if (!dl || !dl.request.context) continue
       this.downloadedBlocksEstimate += dl.request.context.end - dl.request.context.start
     }
     this.preloaded = true
@@ -181,6 +189,7 @@ module.exports = class MirrorDrive {
     }
 
     for (const dl of ranges) {
+      if (!dl) continue
       await dl.done()
     }
   }
@@ -214,6 +223,31 @@ module.exports = class MirrorDrive {
     const dstBlobs = dst.getBlobs ? await dst.getBlobs() : null
     const srcBlobs = this.src.getBlobs ? await this.src.getBlobs() : null
 
+    if (this.preload) {
+      const entries = []
+      const maps = []
+      // we are gonna upgrade how much inflight blobs cause maps are tiny, remember old
+      const inflight = srcBlobs.core.replicator.inflightRange
+
+      for await (const [, srcEntry] of this._list(this.src, null, this.filter)) {
+        entries.push(srcEntry)
+        const blob = srcEntry.value.blob
+        if (blob && blob.blockMap && blob.blockLength) {
+          if (maps.length === 0) {
+            // bump it
+            srcBlobs.core.replicator.setInflightRange(256, 512)
+          }
+          maps.push(srcBlobs.core.download({ start: blob.blockOffset, length: blob.blockLength }))
+        }
+      }
+
+      for (const m of maps) await m.done()
+      srcBlobs.core.replicator.setInflightRange(inflight)
+
+      // flush in bg
+      this._flushPreload(entries).catch(noop)
+    }
+
     if (this.prune) {
       for await (const [key, dstEntry, srcEntry] of this._list(this.dst, this.src, null)) {
         if (srcEntry) continue
@@ -226,17 +260,6 @@ module.exports = class MirrorDrive {
 
         if (!this.dryRun) await dst.del(key)
       }
-    }
-
-    if (this.preload) {
-      const entries = []
-
-      for await (const [, srcEntry] of this._list(this.src, null, this.filter)) {
-        entries.push(srcEntry)
-      }
-
-      // flush in bg
-      this._flushPreload(entries).catch(noop)
     }
 
     for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, this.filter)) {
