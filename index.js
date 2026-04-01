@@ -262,6 +262,8 @@ module.exports = class MirrorDrive {
       }
     }
 
+    const deferredSymlinks = []
+
     for await (const [key, srcEntry, dstEntry] of this._list(this.src, dst, this.filter)) {
       if (!srcEntry) continue // Due entries option, src entry might not exist probably because it was pruned
 
@@ -319,7 +321,7 @@ module.exports = class MirrorDrive {
       }
 
       if (srcEntry.value.linkname) {
-        await dst.symlink(key, srcEntry.value.linkname)
+        deferredSymlinks.push({ key, linkname: srcEntry.value.linkname })
       } else if (!onlyMetadata) {
         if (dedup) transformers.push(new RabinStream())
         await pipelinePromise(
@@ -340,6 +342,16 @@ module.exports = class MirrorDrive {
         })
       }
     }
+
+    for (const { key, linkname } of deferredSymlinks) {
+      try {
+        await this.dst.symlink(key, linkname)
+      } catch {
+        await this.dst.del(key)
+        await this.dst.symlink(key, linkname)
+      }
+    }
+
 
     if (this.batch) await dst.flush()
 
