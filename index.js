@@ -352,7 +352,6 @@ module.exports = class MirrorDrive {
       }
     }
 
-
     if (this.batch) await dst.flush()
 
     if (blobs) {
