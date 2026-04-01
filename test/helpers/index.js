@@ -10,6 +10,7 @@ module.exports = {
   createDrives,
   changeDrive,
   sortObjects,
+  setupSymlinkTest,
   toArray,
   alike,
   isWin
@@ -75,4 +76,15 @@ async function toArray(iterator) {
     array.push(value)
   }
   return array
+}
+
+async function setupSymlinkTest (t) {
+  const localA = new Localdrive(await t.tmp())
+  const localB = new Localdrive(await t.tmp())
+
+  const store = new Corestore(await t.tmp())
+  const drive = new Hyperdrive(store)
+  await drive.ready()
+
+  return { localA, localB, drive }
 }
