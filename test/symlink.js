@@ -116,7 +116,6 @@ test('symlink same', async function (t) {
   t.ok(await hyper.entry('/tmp.shortcut'))
 })
 
-
 test('file whose parent is a symlink is not mirrored from local', async function (t) {
   const { localA, localB, drive } = await setupSymlinkTest(t)
 

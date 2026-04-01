@@ -78,7 +78,7 @@ async function toArray(iterator) {
   return array
 }
 
-async function setupSymlinkTest (t) {
+async function setupSymlinkTest(t) {
   const localA = new Localdrive(await t.tmp())
   const localB = new Localdrive(await t.tmp())
 
