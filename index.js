@@ -228,9 +228,10 @@ module.exports = class MirrorDrive {
       const maps = []
       // we are gonna upgrade how much inflight blobs cause maps are tiny, remember old
       const inflight = blobs.core.replicator.inflightRange
+      const d = srcBlobs ? null : dst
 
-      for await (const [, srcEntry, dstEntry] of this._list(this.src, null, this.filter)) {
-        const entry = blobs === srcBlobs ? srcEntry : dstEntry
+      for await (const [, srcEntry, dstEntry] of this._list(this.src, d, this.filter)) {
+        const entry = d ? dstEntry : srcEntry
         if (!entry) continue
         entries.push(entry)
         const blob = entry.value.blob
