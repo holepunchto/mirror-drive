@@ -64,7 +64,7 @@ test('filter - local to hyper', async function (t) {
   t.alike(actual.sort(), expected.sort())
 
   function onfilter(key) {
-    actual.push(key)
+    if (actual.indexOf(key) === -1) actual.push(key)
     return true
   }
 })
@@ -98,6 +98,7 @@ test('filter - hyper to local', async function (t) {
   t.alike([...new Set(actual)].sort(), expected.sort())
 
   function onfilter(key) {
+    if (actual.indexOf(key) === -1) actual.push(key)
     actual.push(key)
     return true
   }

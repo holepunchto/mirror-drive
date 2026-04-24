@@ -77,7 +77,7 @@ module.exports = class MirrorDrive {
     this.dedup = !!opts.dedup
     this.dryRun = !!opts.dryRun
     this.prune = opts.prune !== false
-    this.preload = opts.preload !== false && !!src.getBlobs
+    this.preload = opts.preload !== false && (!!src.getBlobs || !!dst.getBlobs)
     this.preloaded = false
     this.includeProgress = !!opts.progress && !!src.getBlobs
     this.includeEquals = !!opts.includeEquals
@@ -168,8 +168,7 @@ module.exports = class MirrorDrive {
     return dl
   }
 
-  async _flushPreload(entries) {
-    const blobs = await this.src.getBlobs()
+  async _flushPreload(blobs, entries) {
     const promises = []
 
     for (const entry of entries) {
@@ -224,28 +223,32 @@ module.exports = class MirrorDrive {
     const srcBlobs = this.src.getBlobs ? await this.src.getBlobs() : null
 
     if (this.preload) {
+      const blobs = srcBlobs || dstBlobs
       const entries = []
       const maps = []
       // we are gonna upgrade how much inflight blobs cause maps are tiny, remember old
-      const inflight = srcBlobs.core.replicator.inflightRange
+      const inflight = blobs.core.replicator.inflightRange
+      const d = srcBlobs ? null : dst
 
-      for await (const [, srcEntry] of this._list(this.src, null, this.filter)) {
-        entries.push(srcEntry)
-        const blob = srcEntry.value.blob
+      for await (const [, srcEntry, dstEntry] of this._list(this.src, d, this.filter)) {
+        const entry = d ? dstEntry : srcEntry
+        if (!entry) continue
+        entries.push(entry)
+        const blob = entry.value.blob
         if (blob && blob.blockMap && blob.blockLength) {
           if (maps.length === 0) {
             // bump it
-            srcBlobs.core.replicator.setInflightRange(256, 512)
+            blobs.core.replicator.setInflightRange(256, 512)
           }
-          maps.push(srcBlobs.core.download({ start: blob.blockOffset, length: blob.blockLength }))
+          maps.push(blobs.core.download({ start: blob.blockOffset, length: blob.blockLength }))
         }
       }
 
       for (const m of maps) await m.done()
-      srcBlobs.core.replicator.setInflightRange(inflight)
+      blobs.core.replicator.setInflightRange(inflight)
 
       // flush in bg
-      this._flushPreload(entries).catch(noop)
+      this._flushPreload(blobs, entries).catch(noop)
     }
 
     if (this.prune) {
