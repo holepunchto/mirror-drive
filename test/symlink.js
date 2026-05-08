@@ -1,7 +1,9 @@
 const test = require('brittle')
-const { createDrives, toArray } = require('./helpers/index.js')
+const { createDrives, toArray, setupSymlinkTest } = require('./helpers/index.js')
 const MirrorDrive = require('../index.js')
 const b4a = require('b4a')
+const fsp = require('fs').promises
+const path = require('path')
 
 test('symlink basic', async function (t) {
   const { local, hyper } = await createDrives(t, undefined)
@@ -112,4 +114,28 @@ test('symlink same', async function (t) {
 
   t.ok(await local.entry('/tmp.shortcut'))
   t.ok(await hyper.entry('/tmp.shortcut'))
+})
+
+test('file whose parent is a symlink is not mirrored from local', async function (t) {
+  const { localA, localB, drive } = await setupSymlinkTest(t)
+
+  await fsp.mkdir(path.join(localA.root, 'a', 'b'), { recursive: true })
+  await fsp.writeFile(path.join(localA.root, 'a', 'b', 'c'), 'hello')
+
+  const m = new MirrorDrive(localA, drive)
+  await m.done()
+
+  await fsp.rename(path.join(localA.root, 'a'), path.join(localA.root, 'b'))
+  await fsp.symlink('b', path.join(localA.root, 'a'))
+
+  const m2 = new MirrorDrive(localA, drive)
+  await m2.done()
+
+  const m3 = new MirrorDrive(drive, localB)
+  await m3.done()
+
+  t.not(await localB.entry('/b/b/c'), null)
+  t.not(await localB.entry('/a'), null)
+  t.is((await localB.entry('/a')).value.linkname, 'b')
+  t.is(await localB.entry('/a/b/c'), null)
 })

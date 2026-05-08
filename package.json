@@ -18,6 +18,14 @@
     "stream": {
       "bare": "bare-stream",
       "default": "stream"
+    },
+    "fs": {
+      "bare": "bare-fs",
+      "default": "fs"
+    },
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
     }
   },
   "scripts": {
@@ -39,7 +47,7 @@
   "homepage": "https://github.com/holepunchto/mirror-drive",
   "devDependencies": {
     "b4a": "^1.6.0",
-    "bare-os": "^3.0.1",
+    "bare-os": "^3.8.6",
     "bare-stream": "^2.6.5",
     "brittle": "^3.1.0",
     "corestore": "^7.0.0",
