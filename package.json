@@ -3,9 +3,11 @@
   "version": "1.14.2",
   "description": "Mirror a hyperdrive or localdrive into another one",
   "main": "index.js",
+  "types": "index.d.ts",
   "files": [
     "index.js",
-    "lib/**.js"
+    "lib/**.js",
+    "index.d.ts"
   ],
   "imports": {
     "events": {
