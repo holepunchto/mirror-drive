@@ -180,3 +180,14 @@ test('dedup: localdrive -> hyperdrive (dedup) with changes', async function (t) 
   t.is(diffs.length, 1)
   t.alike(diffs[0], { op: 'change', key: '/file.txt', bytesAdded: 14, bytesRemoved: 12 })
 })
+
+test('dedup: preload restores inflight range', async function (t) {
+  const { local, hyper: src } = await createDrives(t, {}, { setup: false })
+  const { hyper: dst } = await createDrives(t, {}, { setup: false })
+  const blobs = await src.getBlobs()
+  const inflight = blobs.core.replicator.inflightRange
+  await local.put('/file.txt', b4a.from('same content'))
+  await new MirrorDrive(local, src, { dedup: true }).done()
+  await new MirrorDrive(src, dst).done()
+  t.alike(blobs.core.replicator.inflightRange, inflight)
+})
