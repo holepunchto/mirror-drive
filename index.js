@@ -245,7 +245,7 @@ module.exports = class MirrorDrive {
       }
 
       for (const m of maps) await m.done()
-      blobs.core.replicator.setInflightRange(inflight)
+      blobs.core.replicator.setInflightRange(inflight[0], inflight[1])
 
       // flush in bg
       this._flushPreload(blobs, entries).catch(noop)
